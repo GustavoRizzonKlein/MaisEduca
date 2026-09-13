@@ -1,5 +1,5 @@
-import { Redirect, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Redirect, router, type Href } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton, authStyles } from '@/components/auth-ui';
@@ -24,21 +24,15 @@ export default function ResponsavelHomeScreen() {
           <ThemedText type="subtitle" style={styles.title}>Olá, {user.nome}!</ThemedText>
           <ThemedText themeColor="textSecondary">Bem-vindo ao MaisEduca.</ThemedText>
           <View style={styles.cards}>
-            <Placeholder title="Agenda da criança" description="A agenda compartilhada será exibida aqui." />
-            <Placeholder title="Anotações" description="Você poderá acompanhar as informações liberadas pelo professor." />
+            <ThemedText type="smallBold">Acompanhamento</ThemedText>
+            <Pressable onPress={() => router.push('/responsavel/agenda')} style={styles.card}>
+              <ThemedText type="smallBold">Agenda da criança</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Visualizar a rotina compartilhada</ThemedText>
+            </Pressable>
           </View>
           <PrimaryButton title="Sair" onPress={logout} />
         </ScrollView>
       </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Placeholder({ title, description }: { title: string; description: string }) {
-  return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">{title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
     </ThemedView>
   );
 }

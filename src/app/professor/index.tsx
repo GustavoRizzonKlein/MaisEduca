@@ -1,5 +1,5 @@
-import { Redirect, type Href } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Redirect, router, type Href } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton, authStyles } from '@/components/auth-ui';
@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
 import { Spacing } from '@/constants/theme';
+import { mockStudents } from '@/mocks/teacher';
 
 const responsavelRoute: Href = '/responsavel' as Href;
 
@@ -24,22 +25,17 @@ export default function ProfessorHomeScreen() {
           <ThemedText type="subtitle" style={styles.title}>Olá, {user.nome}!</ThemedText>
           <ThemedText themeColor="textSecondary">Bem-vindo ao MaisEduca.</ThemedText>
           <View style={styles.cards}>
-            <Placeholder title="Meus alunos" description="Cadastro e acompanhamento de alunos." />
-            <Placeholder title="Agenda" description="A agenda será implementada em uma próxima etapa." />
-            <Placeholder title="Anotações" description="Registros pedagógicos estarão disponíveis aqui." />
+            <ThemedText type="smallBold">Meus alunos</ThemedText>
+            {mockStudents.map((student) => (
+              <Pressable key={student.id} onPress={() => router.push(`/professor/agenda/${student.id}` as Href)} style={styles.card}>
+                <ThemedText type="smallBold">{student.name}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{student.className} · Abrir agenda</ThemedText>
+              </Pressable>
+            ))}
           </View>
           <PrimaryButton title="Sair" onPress={logout} />
         </ScrollView>
       </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Placeholder({ title, description }: { title: string; description: string }) {
-  return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">{title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
     </ThemedView>
   );
 }

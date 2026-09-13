@@ -16,3 +16,23 @@ export type StudentNote = {
   category: ObservationCategory;
   text: string;
 };
+
+export type AgendaItemType =
+  | 'atividade'
+  | 'aula'
+  | 'intervalo'
+  | 'terapia'
+  | 'evento'
+  | 'outro';
+
+export type AgendaItem = {
+  id: string;
+  alunoId: string;
+  titulo: string;
+  descricao?: string;
+  data: string;
+  horarioInicio: string;
+  horarioFim?: string;
+  tipo: AgendaItemType;
+  observacao?: string;
+};
