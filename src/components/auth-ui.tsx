@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, TextInput, type TextInputProps } from 'react-nat
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
 export function AuthField({ label, ...props }: TextInputProps & { label: string }) {
   return (
@@ -42,7 +42,7 @@ export function PrimaryButton({
 export const authStyles = StyleSheet.create({
   screen: {
     flex: 1,
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.four,
   },
   content: {
     width: '100%',
@@ -50,28 +50,28 @@ export const authStyles = StyleSheet.create({
     alignSelf: 'center',
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: Spacing.five,
+    paddingVertical: Spacing.four,
   },
   logo: {
-    color: '#2563EB',
-    fontSize: 38,
-    lineHeight: 46,
+    color: BrandColors.brand,
+    fontSize: 40,
+    lineHeight: 48,
     fontWeight: '800',
     textAlign: 'center',
   },
   subtitle: {
     textAlign: 'center',
     marginTop: Spacing.one,
-    marginBottom: Spacing.five,
+    marginBottom: Spacing.four,
   },
   form: {
     gap: Spacing.three,
   },
   error: {
-    color: '#B91C1C',
-    backgroundColor: '#FEF2F2',
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
+    color: BrandColors.danger,
+    backgroundColor: BrandColors.dangerSoft,
+    borderRadius: Radius.small,
+    padding: Spacing.three,
   },
   linkButton: {
     alignSelf: 'center',
@@ -79,7 +79,7 @@ export const authStyles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   linkText: {
-    color: '#2563EB',
+    color: BrandColors.brand,
     fontWeight: '700',
   },
   helper: {
@@ -90,25 +90,30 @@ export const authStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   fieldGroup: {
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
   input: {
     color: Colors.light.text,
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: Spacing.two,
+    backgroundColor: Colors.light.inputBackground,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     fontSize: 16,
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    marginTop: Spacing.one,
+    backgroundColor: BrandColors.brand,
+    borderRadius: Radius.small,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    minHeight: 52,
+    justifyContent: 'center',
+    ...Shadows.card,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.onBrand,
     fontWeight: '700',
   },
   pressed: {

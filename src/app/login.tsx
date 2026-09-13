@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthField, authStyles, PrimaryButton } from '@/components/auth-ui';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BrandColors, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 
 const professorRoute: Href = '/professor' as Href;
@@ -41,9 +42,12 @@ export default function LoginScreen() {
     <ThemedView style={authStyles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={authStyles.content} keyboardShouldPersistTaps="handled">
+          <ThemedView type="backgroundElement" style={styles.brandMark}>
+            <ThemedText style={styles.brandMarkText}>M</ThemedText>
+          </ThemedView>
           <ThemedText style={authStyles.logo}>MaisEduca</ThemedText>
           <ThemedText themeColor="textSecondary" style={authStyles.subtitle}>
-            Acompanhamento escolar mais próximo
+            Conectando escola, professores e famílias.
           </ThemedText>
 
           <ThemedView style={authStyles.form}>
@@ -84,5 +88,20 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  brandMark: {
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: Radius.large,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BrandColors.brandSoft,
+    marginBottom: Spacing.two,
+  },
+  brandMarkText: {
+    color: BrandColors.brand,
+    fontSize: 30,
+    fontWeight: '800',
   },
 });

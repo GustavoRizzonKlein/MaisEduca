@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton, authStyles } from '@/components/auth-ui';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAgenda } from '@/contexts/agenda-context';
 import { mockStudents } from '@/mocks/teacher';
 import type { AgendaItem, AgendaItemType } from '@/types/education';
@@ -26,6 +26,15 @@ const typeIcon: Record<AgendaItemType, string> = {
   terapia: '🧩',
   evento: '📌',
   outro: '🗓️',
+};
+
+const typeColor: Record<AgendaItemType, string> = {
+  atividade: BrandColors.learning,
+  aula: BrandColors.information,
+  intervalo: BrandColors.textSecondary,
+  terapia: BrandColors.brand,
+  evento: BrandColors.attention,
+  outro: BrandColors.textSecondary,
 };
 
 function parseDate(value: string) {
@@ -110,7 +119,7 @@ export function AgendaScreen({ studentId, canEdit }: { studentId: string; canEdi
               {dayItems.map((item) => (
                 <Pressable key={item.id} onPress={() => setSelectedItem(item)} style={styles.itemRow}>
                   <ThemedText type="smallBold" style={styles.time}>{item.horarioInicio}</ThemedText>
-                  <ThemedView type="backgroundElement" style={styles.itemCard}>
+                  <ThemedView type="backgroundElement" style={[styles.itemCard, { borderLeftColor: typeColor[item.tipo] }]}>
                     <View style={styles.itemTitleRow}>
                       <ThemedText style={styles.itemIcon}>{typeIcon[item.tipo]}</ThemedText>
                       <ThemedText type="smallBold" style={styles.itemTitle}>{item.titulo}</ThemedText>
@@ -259,35 +268,35 @@ const styles = StyleSheet.create({
   dateHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: Spacing.five },
   dateCopy: { alignItems: 'center', gap: Spacing.one, flex: 1 },
   dateLabel: { textTransform: 'capitalize', textAlign: 'center' },
-  dateButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.light.backgroundElement, alignItems: 'center', justifyContent: 'center' },
-  dateButtonText: { fontSize: 28, color: '#2563EB' },
-  todayText: { color: '#2563EB', fontWeight: '700' },
+  dateButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.light.backgroundElement, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.border },
+  dateButtonText: { fontSize: 28, color: BrandColors.brand },
+  todayText: { color: BrandColors.brand, fontWeight: '700' },
   timeline: { gap: Spacing.two, marginBottom: Spacing.four },
   itemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   time: { width: 48, marginTop: Spacing.three },
-  itemCard: { flex: 1, borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.one },
+  itemCard: { flex: 1, borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one, borderLeftWidth: 4, ...Shadows.card },
   itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   itemIcon: { fontSize: 20 },
   itemTitle: { flex: 1 },
-  empty: { alignItems: 'center', borderRadius: Spacing.three, padding: Spacing.five, gap: Spacing.one, marginBottom: Spacing.four },
+  empty: { alignItems: 'center', borderRadius: Radius.medium, padding: Spacing.five, gap: Spacing.one, marginBottom: Spacing.four, backgroundColor: BrandColors.backgroundElement, ...Shadows.card },
   emptyIcon: { fontSize: 30, marginBottom: Spacing.one },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  modalCard: { borderTopLeftRadius: Spacing.four, borderTopRightRadius: Spacing.four, padding: Spacing.four, gap: Spacing.three },
-  formCard: { maxHeight: '92%', borderTopLeftRadius: Spacing.four, borderTopRightRadius: Spacing.four, padding: Spacing.four },
+  modalCard: { borderTopLeftRadius: Radius.large, borderTopRightRadius: Radius.large, padding: Spacing.four, gap: Spacing.three },
+  formCard: { maxHeight: '92%', borderTopLeftRadius: Radius.large, borderTopRightRadius: Radius.large, padding: Spacing.four },
   modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.one },
   modalText: { marginTop: Spacing.two },
-  observation: { backgroundColor: '#EFF6FF', borderRadius: Spacing.two, padding: Spacing.two, color: '#1D4ED8' },
+  observation: { backgroundColor: BrandColors.informationSoft, borderRadius: Radius.small, padding: Spacing.two, color: BrandColors.information },
   modalActions: { gap: Spacing.two, marginTop: Spacing.two },
   closeButton: { alignSelf: 'center', padding: Spacing.two },
   deleteButton: { alignItems: 'center', padding: Spacing.three },
-  deleteText: { color: '#B91C1C', fontWeight: '700' },
+  deleteText: { color: BrandColors.danger, fontWeight: '700' },
   formField: { marginBottom: Spacing.three, gap: Spacing.one },
   formLabel: { marginBottom: Spacing.one },
-  input: { color: Colors.light.text, backgroundColor: Colors.light.backgroundElement, borderRadius: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
+  input: { color: Colors.light.text, backgroundColor: Colors.light.inputBackground, borderRadius: Radius.small, borderWidth: 1, borderColor: Colors.light.border, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
   multiline: { minHeight: 72, textAlignVertical: 'top' },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.three },
-  typeOption: { borderWidth: 1, borderColor: Colors.light.backgroundSelected, borderRadius: 16, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
-  typeOptionSelected: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
+  typeOption: { borderWidth: 1, borderColor: Colors.light.border, borderRadius: Radius.pill, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
+  typeOptionSelected: { borderColor: BrandColors.brand, backgroundColor: BrandColors.brandSoft },
   formActions: { gap: Spacing.two, marginTop: Spacing.two },
   cancelButton: { alignItems: 'center', padding: Spacing.three },
 });

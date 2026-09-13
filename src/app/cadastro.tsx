@@ -7,6 +7,7 @@ import { AuthField, authStyles, PrimaryButton } from '@/components/auth-ui';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { BrandColors, Radius } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import type { UserRole } from '@/types/auth';
 
@@ -79,7 +80,7 @@ export default function CadastroScreen() {
               secureTextEntry
               placeholder="Repita sua senha"
             />
-            <ThemedText type="smallBold">Tipo de usuário</ThemedText>
+            <ThemedText type="smallBold">Como você usa o MaisEduca?</ThemedText>
             <View style={styles.roleRow}>
               <RoleOption label="Professor" selected={role === 'professor'} onPress={() => setRole('professor')} />
               <RoleOption label="Responsável" selected={role === 'responsavel'} onPress={() => setRole('responsavel')} />
@@ -145,23 +146,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     borderWidth: 1,
-    borderColor: '#E0E1E6',
-    borderRadius: Spacing.two,
+    borderColor: BrandColors.border,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
   },
   roleOptionSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    borderColor: BrandColors.brand,
+    backgroundColor: BrandColors.brandSoft,
   },
   radio: {
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: '#60646C',
+    borderColor: BrandColors.textSecondary,
   },
   radioSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#2563EB',
+    borderColor: BrandColors.brand,
+    backgroundColor: BrandColors.brand,
   },
 });
