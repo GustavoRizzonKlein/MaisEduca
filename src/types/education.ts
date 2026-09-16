@@ -34,5 +34,7 @@ export type AgendaItem = {
   horarioInicio: string;
   horarioFim?: string;
   tipo: AgendaItemType;
+  disciplina?: string;
+  local?: string;
   observacao?: string;
 };

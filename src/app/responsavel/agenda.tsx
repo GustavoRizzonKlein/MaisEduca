@@ -13,7 +13,7 @@ export default function ResponsavelAgendaRoute() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: 'Agenda da criança', headerBackTitle: 'Voltar' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <AgendaScreen studentId="student-joao" canEdit={false} />
     </>
   );
