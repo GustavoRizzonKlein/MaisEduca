@@ -17,7 +17,7 @@ export default function ProfessorAgendaRoute() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <AgendaScreen studentId={studentId} canEdit />
+      <AgendaScreen studentId={studentId} canEdit fallbackRoute="/professor" />
     </>
   );
 }

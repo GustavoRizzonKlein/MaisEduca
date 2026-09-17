@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -98,7 +98,7 @@ function isSameDay(date: string, other: string) {
   return date === other;
 }
 
-export function AgendaScreen({ studentId, canEdit }: { studentId: string; canEdit: boolean }) {
+export function AgendaScreen({ studentId, canEdit, fallbackRoute }: { studentId: string; canEdit: boolean; fallbackRoute: Href }) {
   const { items, createItem, updateItem, deleteItem } = useAgenda();
   const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null);
   const [formItem, setFormItem] = useState<AgendaItem | null>(null);
@@ -159,7 +159,16 @@ export function AgendaScreen({ studentId, canEdit }: { studentId: string; canEdi
     <ThemedView style={authStyles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace(fallbackRoute);
+              }
+            }}
+            style={styles.backButton}
+          >
             <ThemedText style={styles.backButtonText}>‹</ThemedText>
           </Pressable>
           <View style={styles.headerTextWrap}>
@@ -285,10 +294,18 @@ export function AgendaScreen({ studentId, canEdit }: { studentId: string; canEdi
         item={formItem}
         onClose={() => setFormItem(null)}
         onSave={(item) => {
+          const savedItem = {
+            ...item,
+            alunoId: studentId,
+            data: item.data.trim(),
+            horarioInicio: item.horarioInicio.trim(),
+            horarioFim: item.horarioFim?.trim() ?? '',
+          };
+
           if (item.id) {
-            updateItem(item);
+            updateItem(savedItem);
           } else {
-            createItem(item);
+            createItem(savedItem);
           }
           setFormItem(null);
         }}
@@ -383,7 +400,15 @@ function AgendaFormModal({
   };
 
   function save() {
-    if (!draft?.titulo.trim() || !draft.data || !draft.horarioInicio || !draft.tipo) {
+    if (
+      !draft?.titulo.trim()
+      || !draft.data.trim()
+      || !draft.horarioInicio.trim()
+      || !draft.tipo
+      || !/^\d{4}-\d{2}-\d{2}$/.test(draft.data.trim())
+      || !/^\d{2}:\d{2}$/.test(draft.horarioInicio.trim())
+      || (draft.horarioFim?.trim() && !/^\d{2}:\d{2}$/.test(draft.horarioFim.trim()))
+    ) {
       setError('Preencha título, data, horário inicial e tipo.');
       return;
     }
@@ -611,4 +636,3 @@ const styles = StyleSheet.create({
   cancelAction: { flex: 1, alignItems: 'center', paddingVertical: Spacing.two },
   cancelText: { color: '#F5F5F7', fontWeight: '700' },
 });
-

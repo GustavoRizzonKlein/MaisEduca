@@ -14,7 +14,7 @@ export default function ResponsavelAgendaRoute() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <AgendaScreen studentId="student-joao" canEdit={false} />
+      <AgendaScreen studentId="student-joao" canEdit={false} fallbackRoute="/responsavel" />
     </>
   );
 }
