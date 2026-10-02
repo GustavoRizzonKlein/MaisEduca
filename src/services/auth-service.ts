@@ -1,72 +1,89 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { User as AuthUser } from '@supabase/supabase-js';
 
-import type { PublicUser, User, UserRole } from '@/types/auth';
+import { getSupabase } from '@/lib/supabase';
+import type { PublicUser, UserRole } from '@/types/auth';
 
-const USERS_KEY = '@maiseduca/users';
-const SESSION_KEY = '@maiseduca/session';
-
-const defaultUsers: User[] = [
-  {
-    id: 'user-professor',
-    nome: 'Professora Ana',
-    email: 'professor@maiseduca.com',
-    senha: '123456',
-    role: 'professor',
-  },
-  {
-    id: 'user-responsavel',
-    nome: 'Responsável de João',
-    email: 'responsavel@maiseduca.com',
-    senha: '123456',
-    role: 'responsavel',
-  },
-];
-
-async function readUsers(): Promise<User[]> {
-  const storedUsers = await AsyncStorage.getItem(USERS_KEY);
-  if (!storedUsers) {
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
-    return defaultUsers;
-  }
-
-  const parsedUsers: unknown = JSON.parse(storedUsers);
-  if (!Array.isArray(parsedUsers)) {
-    throw new Error('Os usuários armazenados estão em um formato inválido.');
-  }
-
-  return parsedUsers as User[];
+function isUserRole(value: unknown): value is UserRole {
+  return value === 'professor' || value === 'responsavel';
 }
 
-function toPublicUser(user: User): PublicUser {
-  const { senha: _senha, ...publicUser } = user;
-  return publicUser;
+function toPublicUser(user: AuthUser): PublicUser {
+  const email = user.email?.trim();
+  if (!email) {
+    throw new Error('A conta autenticada não possui e-mail.');
+  }
+
+  const nomeRaw = user.user_metadata?.nome;
+  const nome = typeof nomeRaw === 'string' ? nomeRaw.trim() : '';
+  if (!nome) {
+    throw new Error('A conta autenticada não possui nome nos metadados.');
+  }
+
+  // RISCO (HIGH, pendente de requisito externo): `role` está em user_metadata,
+  // que o próprio usuário pode alterar via Auth API. Isso basta para roteamento
+  // da UI hoje, mas NÃO é autorização segura (RLS / privileging).
+  // Não migrar para app_metadata ou tabela profiles sem schema/estratégia definidos.
+  const role = user.user_metadata?.role;
+  if (!isUserRole(role)) {
+    throw new Error('A conta autenticada não possui um perfil válido (professor ou responsável).');
+  }
+
+  return {
+    id: user.id,
+    nome,
+    email,
+    role,
+  };
+}
+
+function authErrorMessage(error: { message: string; status?: number } | null, fallback: string): string {
+  if (!error?.message) return fallback;
+  const message = error.message.toLowerCase();
+  if (message.includes('invalid login credentials')) {
+    return 'E-mail ou senha incorretos.';
+  }
+  if (message.includes('user already registered')) {
+    return 'Já existe uma conta cadastrada com este e-mail.';
+  }
+  if (message.includes('email not confirmed')) {
+    return 'Confirme o e-mail da conta antes de entrar.';
+  }
+  return error.message;
 }
 
 export async function getSession(): Promise<PublicUser | null> {
-  const session = await AsyncStorage.getItem(SESSION_KEY);
-  if (!session) return null;
+  const supabase = getSupabase();
 
-  const parsedSession: unknown = JSON.parse(session);
-  if (!parsedSession || typeof parsedSession !== 'object' || !('id' in parsedSession)) {
-    throw new Error('A sessão armazenada está em um formato inválido.');
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    throw new Error(authErrorMessage(sessionError, 'Não foi possível carregar a sessão.'));
+  }
+  if (!sessionData.session) return null;
+
+  // Valida o JWT local com a API Auth; sessão revogada/inválida não é aceita.
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    return null;
   }
 
-  return parsedSession as PublicUser;
+  return toPublicUser(data.user);
 }
 
 export async function signIn(email: string, senha: string): Promise<PublicUser> {
-  const users = await readUsers();
-  const user = users.find(
-    (candidate) => candidate.email.toLowerCase() === email.trim().toLowerCase() && candidate.senha === senha,
-  );
+  const { data, error } = await getSupabase().auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password: senha,
+  });
 
-  if (!user) {
-    throw new Error('E-mail ou senha incorretos.');
+  if (error) {
+    throw new Error(authErrorMessage(error, 'Não foi possível entrar.'));
+  }
+  if (!data.user) {
+    throw new Error('Não foi possível entrar.');
   }
 
-  const publicUser = toPublicUser(user);
-  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(publicUser));
-  return publicUser;
+  return toPublicUser(data.user);
 }
 
 export async function signUp(
@@ -75,27 +92,34 @@ export async function signUp(
   senha: string,
   role: UserRole,
 ): Promise<PublicUser> {
-  const users = await readUsers();
-  const normalizedEmail = email.trim().toLowerCase();
+  const { data, error } = await getSupabase().auth.signUp({
+    email: email.trim().toLowerCase(),
+    password: senha,
+    options: {
+      data: {
+        nome: nome.trim(),
+        role,
+      },
+    },
+  });
 
-  if (users.some((user) => user.email.toLowerCase() === normalizedEmail)) {
-    throw new Error('Já existe uma conta cadastrada com este e-mail.');
+  if (error) {
+    throw new Error(authErrorMessage(error, 'Não foi possível criar a conta.'));
+  }
+  if (!data.user) {
+    throw new Error('Não foi possível criar a conta.');
+  }
+  // Sem sessão: projeto provavelmente exige confirmação de e-mail.
+  if (!data.session) {
+    throw new Error('Conta criada. Confirme o e-mail antes de entrar.');
   }
 
-  const newUser: User = {
-    id: `user-${Date.now()}`,
-    nome: nome.trim(),
-    email: normalizedEmail,
-    senha,
-    role,
-  };
-
-  await AsyncStorage.setItem(USERS_KEY, JSON.stringify([...users, newUser]));
-  const publicUser = toPublicUser(newUser);
-  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(publicUser));
-  return publicUser;
+  return toPublicUser(data.user);
 }
 
 export async function signOut(): Promise<void> {
-  await AsyncStorage.removeItem(SESSION_KEY);
+  const { error } = await getSupabase().auth.signOut();
+  if (error) {
+    throw new Error(authErrorMessage(error, 'Não foi possível sair.'));
+  }
 }

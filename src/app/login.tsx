@@ -76,9 +76,6 @@ export default function LoginScreen() {
               <ThemedText style={authStyles.linkText}>Criar uma conta</ThemedText>
             </Pressable>
           </Link>
-          <ThemedText type="small" themeColor="textSecondary" style={authStyles.helper}>
-            Teste: professor@maiseduca.com ou responsavel@maiseduca.com
-          </ThemedText>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

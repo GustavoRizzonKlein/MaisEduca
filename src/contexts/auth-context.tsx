@@ -59,9 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       logout: async () => {
-        await signOut();
-        setUser(null);
-        setError(null);
+        try {
+          await signOut();
+          setError(null);
+        } catch (logoutError: unknown) {
+          setError(logoutError instanceof Error ? logoutError.message : 'Não foi possível sair.');
+        } finally {
+          setUser(null);
+        }
       },
       clearError: () => setError(null),
     }),
