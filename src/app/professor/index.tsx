@@ -8,14 +8,13 @@ import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
 import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { mockStudents } from '@/mocks/teacher';
-
-const responsavelRoute: Href = '/responsavel' as Href;
+import { canAccessProfessorArea, homeRouteForRole, roleLabel } from '@/types/auth';
 
 export default function ProfessorHomeScreen() {
   const { user, isLoading, logout } = useAuth();
   if (isLoading) return null;
   if (!user) return <Redirect href="/login" />;
-  if (user.role !== 'professor') return <Redirect href={responsavelRoute} />;
+  if (!canAccessProfessorArea(user.role)) return <Redirect href={homeRouteForRole(user.role)} />;
 
   return (
     <ThemedView style={authStyles.screen}>
@@ -23,7 +22,7 @@ export default function ProfessorHomeScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.headerRow}>
             <View>
-              <ThemedText type="small" themeColor="textSecondary">Área do professor</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Área do {roleLabel(user.role).toLowerCase()}</ThemedText>
               <ThemedText type="subtitle" style={styles.title}>Olá, {user.nome}!</ThemedText>
             </View>
             <View style={styles.avatar}><ThemedText style={styles.avatarText}>{user.nome.charAt(0)}</ThemedText></View>

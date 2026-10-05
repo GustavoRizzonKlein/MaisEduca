@@ -1,11 +1,7 @@
 import type { User as AuthUser } from '@supabase/supabase-js';
 
 import { getSupabase } from '@/lib/supabase';
-import type { PublicUser, UserRole } from '@/types/auth';
-
-function isUserRole(value: unknown): value is UserRole {
-  return value === 'professor' || value === 'responsavel';
-}
+import { isUserRole, type PublicUser, type UserRole } from '@/types/auth';
 
 function toPublicUser(user: AuthUser): PublicUser {
   const email = user.email?.trim();
@@ -25,7 +21,7 @@ function toPublicUser(user: AuthUser): PublicUser {
   // Não migrar para app_metadata ou tabela profiles sem schema/estratégia definidos.
   const role = user.user_metadata?.role;
   if (!isUserRole(role)) {
-    throw new Error('A conta autenticada não possui um perfil válido (professor ou responsável).');
+    throw new Error('A conta autenticada não possui um perfil válido.');
   }
 
   return {

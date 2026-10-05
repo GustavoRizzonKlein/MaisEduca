@@ -1,11 +1,9 @@
-import { Redirect, type Href } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
-
-const professorRoute: Href = '/professor' as Href;
-const responsavelRoute: Href = '/responsavel' as Href;
+import { homeRouteForRole } from '@/types/auth';
 
 export default function IndexScreen() {
   const { user, isLoading } = useAuth();
@@ -19,7 +17,7 @@ export default function IndexScreen() {
   }
 
   if (!user) return <Redirect href="/login" />;
-  return <Redirect href={user.role === 'professor' ? professorRoute : responsavelRoute} />;
+  return <Redirect href={homeRouteForRole(user.role)} />;
 }
 
 const styles = StyleSheet.create({

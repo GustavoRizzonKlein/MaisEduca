@@ -1,4 +1,4 @@
-import { Link, Redirect, useRouter, type Href } from 'expo-router';
+import { Link, Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,10 +9,12 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { BrandColors, Radius } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
-import type { UserRole } from '@/types/auth';
-
-const professorRoute: Href = '/professor' as Href;
-const responsavelRoute: Href = '/responsavel' as Href;
+import {
+  homeRouteForRole,
+  PUBLIC_SIGNUP_ROLES,
+  roleLabel,
+  type UserRole,
+} from '@/types/auth';
 
 export default function CadastroScreen() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function CadastroScreen() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (user) return <Redirect href={user.role === 'professor' ? professorRoute : responsavelRoute} />;
+  if (user) return <Redirect href={homeRouteForRole(user.role)} />;
 
   async function handleRegister() {
     setValidationError(null);
@@ -46,7 +48,7 @@ export default function CadastroScreen() {
     setIsSubmitting(true);
     try {
       const registeredUser = await register(nome, email, senha, role);
-      router.replace(registeredUser.role === 'professor' ? professorRoute : responsavelRoute);
+      router.replace(homeRouteForRole(registeredUser.role));
     } catch {
       // O contexto mantém a mensagem exibida no formulário.
     } finally {
@@ -81,9 +83,15 @@ export default function CadastroScreen() {
               placeholder="Repita sua senha"
             />
             <ThemedText type="smallBold">Como você usa o MaisEduca?</ThemedText>
-            <View style={styles.roleRow}>
-              <RoleOption label="Professor" selected={role === 'professor'} onPress={() => setRole('professor')} />
-              <RoleOption label="Responsável" selected={role === 'responsavel'} onPress={() => setRole('responsavel')} />
+            <View style={styles.roleGrid}>
+              {PUBLIC_SIGNUP_ROLES.map((option) => (
+                <RoleOption
+                  key={option}
+                  label={roleLabel(option)}
+                  selected={role === option}
+                  onPress={() => setRole(option)}
+                />
+              ))}
             </View>
             {(validationError || error) && (
               <ThemedText style={authStyles.error}>{validationError ?? error}</ThemedText>
@@ -136,12 +144,14 @@ const styles = StyleSheet.create({
   description: {
     marginBottom: Spacing.five,
   },
-  roleRow: {
+  roleGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   roleOption: {
-    flex: 1,
+    width: '48%',
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,

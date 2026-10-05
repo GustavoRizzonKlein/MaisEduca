@@ -1,4 +1,4 @@
-import { Redirect, router, type Href } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,14 +7,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
 import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
-
-const professorRoute: Href = '/professor' as Href;
+import { homeRouteForRole } from '@/types/auth';
 
 export default function ResponsavelHomeScreen() {
   const { user, isLoading, logout } = useAuth();
   if (isLoading) return null;
   if (!user) return <Redirect href="/login" />;
-  if (user.role !== 'responsavel') return <Redirect href={professorRoute} />;
+  if (user.role !== 'responsavel') return <Redirect href={homeRouteForRole(user.role)} />;
 
   return (
     <ThemedView style={authStyles.screen}>

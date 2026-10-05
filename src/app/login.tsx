@@ -1,4 +1,4 @@
-import { Link, Redirect, useRouter, type Href } from 'expo-router';
+import { Link, Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,9 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BrandColors, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
-
-const professorRoute: Href = '/professor' as Href;
-const responsavelRoute: Href = '/responsavel' as Href;
+import { homeRouteForRole } from '@/types/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -19,7 +17,7 @@ export default function LoginScreen() {
   const [senha, setSenha] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (user) return <Redirect href={user.role === 'professor' ? professorRoute : responsavelRoute} />;
+  if (user) return <Redirect href={homeRouteForRole(user.role)} />;
 
   async function handleLogin() {
     clearError();
@@ -30,7 +28,7 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       const authenticatedUser = await login(email, senha);
-      router.replace(authenticatedUser.role === 'professor' ? professorRoute : responsavelRoute);
+      router.replace(homeRouteForRole(authenticatedUser.role));
     } catch {
       // O contexto mantém a mensagem exibida no formulário.
     } finally {
