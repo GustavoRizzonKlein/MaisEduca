@@ -11,8 +11,12 @@ import { mockStudents } from '@/mocks/teacher';
 import {
   canApproveComunicados,
   canAssociateResponsaveis,
+  canManageAlunos,
+  canManageProfessorApoio,
   canManageProfessores,
   canManageResponsaveis,
+  canManageTurmas,
+  canManageUsers,
   canViewAcompanhamento,
   homeRouteForRole,
 } from '@/types/auth';
@@ -37,18 +41,48 @@ export default function DirecaoHomeScreen() {
           <ThemedText themeColor="textSecondary">Gestão da escola e acompanhamento pedagógico.</ThemedText>
 
           <View style={styles.section}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Atribuições desta área</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionHint}>
-              Resumo do que o perfil Direção pode fazer. Ainda não há ações disponíveis nesta tela.
-            </ThemedText>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>Gestão</ThemedText>
+            {canManageUsers(user.role) && (
+              <Pressable style={styles.card} onPress={() => router.push('/direcao/usuarios' as Href)}>
+                <View style={styles.cardCopy}>
+                  <ThemedText type="smallBold">Usuários</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Professores, Professores de Apoio e Responsáveis
+                  </ThemedText>
+                </View>
+                <ThemedText type="small" style={styles.cardAction}>Abrir ›</ThemedText>
+              </Pressable>
+            )}
+            {canManageTurmas(user.role) && (
+              <Pressable style={styles.card} onPress={() => router.push('/direcao/turmas' as Href)}>
+                <View style={styles.cardCopy}>
+                  <ThemedText type="smallBold">Turmas</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">Cadastrar e gerenciar turmas</ThemedText>
+                </View>
+                <ThemedText type="small" style={styles.cardAction}>Abrir ›</ThemedText>
+              </Pressable>
+            )}
+            {canManageAlunos(user.role) && (
+              <Pressable style={styles.card} onPress={() => router.push('/direcao/alunos' as Href)}>
+                <View style={styles.cardCopy}>
+                  <ThemedText type="smallBold">Alunos</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">Cadastrar e gerenciar alunos</ThemedText>
+                </View>
+                <ThemedText type="small" style={styles.cardAction}>Abrir ›</ThemedText>
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>Atribuições</ThemedText>
             {canManageProfessores(user.role) && (
-              <CapabilityInfo title="Gestão de professores" description="Inclui cadastro e acompanhamento do corpo docente" />
+              <CapabilityInfo title="Gestão de professores" description="Cadastro, edição, exclusão e turmas" />
             )}
-            {canManageResponsaveis(user.role) && (
-              <CapabilityInfo title="Gestão de responsáveis" description="Inclui cadastro e acompanhamento das famílias" />
+            {canManageProfessorApoio(user.role) && (
+              <CapabilityInfo title="Gestão de professores de apoio" description="Cadastro e alunos específicos" />
             )}
-            {canAssociateResponsaveis(user.role) && (
-              <CapabilityInfo title="Vínculos com alunos" description="Inclui associação de responsáveis aos alunos" />
+            {canManageResponsaveis(user.role) && canAssociateResponsaveis(user.role) && (
+              <CapabilityInfo title="Gestão de responsáveis" description="Cadastro e vínculo com alunos" />
             )}
             {canApproveComunicados(user.role) && (
               <CapabilityInfo title="Comunicados" description="Inclui aprovação e rejeição de avisos" />
@@ -101,7 +135,6 @@ const styles = StyleSheet.create({
   avatarText: { color: BrandColors.attention, fontSize: 20, fontWeight: '800' },
   section: { gap: Spacing.two, marginTop: Spacing.five, marginBottom: Spacing.three },
   sectionTitle: { fontSize: 22, lineHeight: 28, marginBottom: Spacing.one },
-  sectionHint: { marginBottom: Spacing.one },
   capabilityInfo: {
     borderRadius: Radius.medium,
     padding: Spacing.three,

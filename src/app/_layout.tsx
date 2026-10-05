@@ -20,6 +20,9 @@ export default function TabLayout() {
             <Stack.Screen name="login" />
             <Stack.Screen name="cadastro" />
             <Stack.Screen name="direcao/index" />
+            <Stack.Screen name="direcao/usuarios" />
+            <Stack.Screen name="direcao/turmas" />
+            <Stack.Screen name="direcao/alunos" />
             <Stack.Screen name="direcao/agenda/[studentId]" />
             <Stack.Screen name="professor/index" />
             <Stack.Screen name="professor/agenda/[studentId]" />

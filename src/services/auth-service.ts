@@ -3,6 +3,14 @@ import type { User as AuthUser } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/supabase';
 import { isUserRole, type PublicUser, type UserRole } from '@/types/auth';
 
+function readRole(user: AuthUser): UserRole {
+  // Autorização: somente app_metadata (não manipulável pelo cliente).
+  const appRole = user.app_metadata?.role;
+  if (isUserRole(appRole)) return appRole;
+
+  throw new Error('A conta autenticada não possui um perfil válido.');
+}
+
 function toPublicUser(user: AuthUser): PublicUser {
   const email = user.email?.trim();
   if (!email) {
@@ -15,20 +23,11 @@ function toPublicUser(user: AuthUser): PublicUser {
     throw new Error('A conta autenticada não possui nome nos metadados.');
   }
 
-  // RISCO (HIGH, pendente de requisito externo): `role` está em user_metadata,
-  // que o próprio usuário pode alterar via Auth API. Isso basta para roteamento
-  // da UI hoje, mas NÃO é autorização segura (RLS / privileging).
-  // Não migrar para app_metadata ou tabela profiles sem schema/estratégia definidos.
-  const role = user.user_metadata?.role;
-  if (!isUserRole(role)) {
-    throw new Error('A conta autenticada não possui um perfil válido.');
-  }
-
   return {
     id: user.id,
     nome,
     email,
-    role,
+    role: readRole(user),
   };
 }
 
@@ -44,6 +43,9 @@ function authErrorMessage(error: { message: string; status?: number } | null, fa
   if (message.includes('email not confirmed')) {
     return 'Confirme o e-mail da conta antes de entrar.';
   }
+  if (message.includes('cadastro público desabilitado') || message.includes('signups not allowed')) {
+    return 'Cadastro público desabilitado. Contas são criadas apenas pela Direção.';
+  }
   return error.message;
 }
 
@@ -56,7 +58,6 @@ export async function getSession(): Promise<PublicUser | null> {
   }
   if (!sessionData.session) return null;
 
-  // Valida o JWT local com a API Auth; sessão revogada/inválida não é aceita.
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
     await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
@@ -79,38 +80,20 @@ export async function signIn(email: string, senha: string): Promise<PublicUser> 
     throw new Error('Não foi possível entrar.');
   }
 
-  return toPublicUser(data.user);
+  // Garante JWT atualizado com app_metadata.role após migração.
+  await getSupabase().auth.refreshSession().catch(() => undefined);
+  const { data: fresh, error: freshError } = await getSupabase().auth.getUser();
+  if (freshError || !fresh.user) {
+    return toPublicUser(data.user);
+  }
+  return toPublicUser(fresh.user);
 }
 
-export async function signUp(
-  nome: string,
-  email: string,
-  senha: string,
-  role: UserRole,
-): Promise<PublicUser> {
-  const { data, error } = await getSupabase().auth.signUp({
-    email: email.trim().toLowerCase(),
-    password: senha,
-    options: {
-      data: {
-        nome: nome.trim(),
-        role,
-      },
-    },
-  });
-
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim().toLowerCase());
   if (error) {
-    throw new Error(authErrorMessage(error, 'Não foi possível criar a conta.'));
+    throw new Error(authErrorMessage(error, 'Não foi possível enviar o e-mail de redefinição.'));
   }
-  if (!data.user) {
-    throw new Error('Não foi possível criar a conta.');
-  }
-  // Sem sessão: projeto provavelmente exige confirmação de e-mail.
-  if (!data.session) {
-    throw new Error('Conta criada. Confirme o e-mail antes de entrar.');
-  }
-
-  return toPublicUser(data.user);
 }
 
 export async function signOut(): Promise<void> {

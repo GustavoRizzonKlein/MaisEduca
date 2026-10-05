@@ -4,8 +4,10 @@ export const USER_ROLES = ['direcao', 'professor', 'professor_apoio', 'responsav
 
 export type UserRole = (typeof USER_ROLES)[number];
 
-/** Perfis oferecidos no cadastro público — `direcao` não é autoatribuível. */
-export const PUBLIC_SIGNUP_ROLES = ['professor', 'professor_apoio', 'responsavel'] as const satisfies readonly UserRole[];
+/** Perfis que a Direção pode cadastrar e gerenciar. */
+export const MANAGED_USER_ROLES = ['professor', 'professor_apoio', 'responsavel'] as const satisfies readonly UserRole[];
+
+export type ManagedUserRole = (typeof MANAGED_USER_ROLES)[number];
 
 export type User = {
   id: string;
@@ -17,8 +19,21 @@ export type User = {
 
 export type PublicUser = Omit<User, 'senha'>;
 
+export type ManagedProfile = {
+  id: string;
+  nome: string;
+  email: string;
+  role: ManagedUserRole;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && (USER_ROLES as readonly string[]).includes(value);
+}
+
+export function isManagedUserRole(value: unknown): value is ManagedUserRole {
+  return typeof value === 'string' && (MANAGED_USER_ROLES as readonly string[]).includes(value);
 }
 
 export function homeRouteForRole(role: UserRole): Href {
@@ -50,11 +65,27 @@ export function canManageProfessores(role: UserRole): boolean {
   return role === 'direcao';
 }
 
+export function canManageProfessorApoio(role: UserRole): boolean {
+  return role === 'direcao';
+}
+
 export function canManageResponsaveis(role: UserRole): boolean {
   return role === 'direcao';
 }
 
+export function canManageTurmas(role: UserRole): boolean {
+  return role === 'direcao';
+}
+
+export function canManageAlunos(role: UserRole): boolean {
+  return role === 'direcao';
+}
+
 export function canAssociateResponsaveis(role: UserRole): boolean {
+  return role === 'direcao';
+}
+
+export function canManageUsers(role: UserRole): boolean {
   return role === 'direcao';
 }
 

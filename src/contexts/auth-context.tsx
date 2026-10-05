@@ -1,15 +1,20 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { getSession, signIn, signOut, signUp } from '@/services/auth-service';
-import type { PublicUser, UserRole } from '@/types/auth';
+import {
+  getSession,
+  requestPasswordReset as sendPasswordResetEmail,
+  signIn,
+  signOut,
+} from '@/services/auth-service';
+import type { PublicUser } from '@/types/auth';
 
 type AuthContextValue = {
   user: PublicUser | null;
   isLoading: boolean;
   error: string | null;
   login: (email: string, senha: string) => Promise<PublicUser>;
-  register: (nome: string, email: string, senha: string, role: UserRole) => Promise<PublicUser>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   clearError: () => void;
 };
 
@@ -46,18 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error(message);
         }
       },
-      register: async (nome, email, senha, role) => {
-        setError(null);
-        try {
-          const registeredUser = await signUp(nome, email, senha, role);
-          setUser(registeredUser);
-          return registeredUser;
-        } catch (registerError: unknown) {
-          const message = registerError instanceof Error ? registerError.message : 'Não foi possível criar a conta.';
-          setError(message);
-          throw new Error(message);
-        }
-      },
       logout: async () => {
         try {
           await signOut();
@@ -66,6 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setError(logoutError instanceof Error ? logoutError.message : 'Não foi possível sair.');
         } finally {
           setUser(null);
+        }
+      },
+      requestPasswordReset: async (email) => {
+        setError(null);
+        try {
+          await sendPasswordResetEmail(email);
+        } catch (resetError: unknown) {
+          const message =
+            resetError instanceof Error ? resetError.message : 'Não foi possível enviar o e-mail de redefinição.';
+          setError(message);
+          throw new Error(message);
         }
       },
       clearError: () => setError(null),

@@ -1,4 +1,4 @@
-import { Link, Redirect, useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,15 +12,17 @@ import { homeRouteForRole } from '@/types/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { user, login, error, clearError } = useAuth();
+  const { user, login, requestPasswordReset, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
 
   if (user) return <Redirect href={homeRouteForRole(user.role)} />;
 
   async function handleLogin() {
     clearError();
+    setInfo(null);
     if (!email.trim() || !senha) {
       return;
     }
@@ -31,6 +33,24 @@ export default function LoginScreen() {
       router.replace(homeRouteForRole(authenticatedUser.role));
     } catch {
       // O contexto mantém a mensagem exibida no formulário.
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePasswordReset() {
+    clearError();
+    setInfo(null);
+    if (!email.trim()) {
+      setInfo('Informe o e-mail para receber o link de redefinição.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await requestPasswordReset(email);
+      setInfo('Se o e-mail existir, enviamos um link para redefinir a senha.');
+    } catch {
+      // erro no contexto
     } finally {
       setIsSubmitting(false);
     }
@@ -66,14 +86,16 @@ export default function LoginScreen() {
               placeholder="Digite sua senha"
             />
             {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
+            {info && <ThemedText style={styles.info}>{info}</ThemedText>}
             <PrimaryButton title="Entrar" onPress={handleLogin} disabled={isSubmitting} />
+            <Pressable style={authStyles.linkButton} onPress={handlePasswordReset} disabled={isSubmitting}>
+              <ThemedText style={authStyles.linkText}>Esqueci minha senha</ThemedText>
+            </Pressable>
           </ThemedView>
 
-          <Link href="/cadastro" asChild>
-            <Pressable style={authStyles.linkButton}>
-              <ThemedText style={authStyles.linkText}>Criar uma conta</ThemedText>
-            </Pressable>
-          </Link>
+          <ThemedText themeColor="textSecondary" style={authStyles.helper}>
+            Contas são criadas pela Direção da escola.
+          </ThemedText>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -98,5 +120,11 @@ const styles = StyleSheet.create({
     color: BrandColors.brand,
     fontSize: 30,
     fontWeight: '800',
+  },
+  info: {
+    color: BrandColors.brand,
+    backgroundColor: BrandColors.brandSoft,
+    borderRadius: Radius.small,
+    padding: Spacing.three,
   },
 });
