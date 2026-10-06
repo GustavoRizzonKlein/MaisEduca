@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useTheme } from '@/hooks/use-theme';
 import {
   createManagedUser,
   deleteManagedUser,
@@ -39,6 +40,7 @@ type Mode = 'list' | 'create' | 'edit';
 
 export default function DirecaoUsuariosScreen() {
   const { user, isLoading } = useAuth();
+  const theme = useTheme();
   const [mode, setMode] = useState<Mode>('list');
   const [users, setUsers] = useState<ManagedProfile[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -99,7 +101,7 @@ export default function DirecaoUsuariosScreen() {
     setBusy(true);
     try {
       if (profile.role === 'professor') setSelectedIds(await listProfessorTurmas(profile.id));
-      else if (profile.role === 'professor_apoio') setSelectedIds(await listProfessorApoioAlunos(profile.id));
+      else if (profile.role === 'apoio') setSelectedIds(await listProfessorApoioAlunos(profile.id));
       else setSelectedIds(await listResponsavelAlunos(profile.id));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar vínculos.');
@@ -143,7 +145,7 @@ export default function DirecaoUsuariosScreen() {
           senha: senha || undefined,
         });
         if (role === 'professor') await setProfessorTurmas(updated.id, selectedIds);
-        if (role === 'professor_apoio') await setProfessorApoioAlunos(updated.id, selectedIds);
+        if (role === 'apoio') await setProfessorApoioAlunos(updated.id, selectedIds);
         if (role === 'responsavel') await setResponsavelAlunos(updated.id, selectedIds);
         setInfo('Usuário atualizado.');
         setSelected(updated);
@@ -202,7 +204,7 @@ export default function DirecaoUsuariosScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => (mode === 'list' ? router.replace('/direcao' as Href) : setMode('list'))}>
-            <ThemedText style={styles.back}>‹ Voltar</ThemedText>
+            <ThemedText style={[styles.back, { color: theme.brand }]}>‹ Voltar</ThemedText>
           </Pressable>
           <ThemedText type="subtitle" style={styles.title}>
             {mode === 'list' ? 'Usuários' : mode === 'create' ? 'Novo usuário' : 'Editar usuário'}
@@ -210,17 +212,17 @@ export default function DirecaoUsuariosScreen() {
 
           {mode === 'list' ? (
             <>
-              <PrimaryButton title="Novo usuário" onPress={openCreate} disabled={busy} />
+              <PrimaryButton title="Novo usuário" onPress={openCreate} loading={busy} />
               <View style={styles.list}>
                 {users.map((profile) => (
-                  <Pressable key={profile.id} style={styles.card} onPress={() => openEdit(profile)}>
+                  <Pressable key={profile.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]} onPress={() => openEdit(profile)}>
                     <View style={styles.cardCopy}>
                       <ThemedText type="smallBold">{profile.nome}</ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">
                         {roleLabel(profile.role)} · {profile.email}
                       </ThemedText>
                     </View>
-                    <ThemedText type="small" style={styles.cardAction}>
+                    <ThemedText type="small" style={[styles.cardAction, { color: theme.attention }]}>
                       Editar ›
                     </ThemedText>
                   </Pressable>
@@ -257,7 +259,7 @@ export default function DirecaoUsuariosScreen() {
                       setRole(option);
                       setSelectedIds([]);
                     }}
-                    style={[styles.roleOption, role === option && styles.roleOptionSelected]}>
+                    style={[styles.roleOption, { borderColor: theme.border }, role === option && [styles.roleOptionSelected, { borderColor: theme.brand, backgroundColor: theme.brandSoft }]]}>
                     <ThemedText type="smallBold">{roleLabel(option)}</ThemedText>
                   </Pressable>
                 ))}
@@ -268,7 +270,7 @@ export default function DirecaoUsuariosScreen() {
                   <ThemedText type="smallBold" style={styles.sectionLabel}>
                     {role === 'professor'
                       ? 'Turmas do professor'
-                      : role === 'professor_apoio'
+                      : role === 'apoio'
                         ? 'Alunos do professor de apoio'
                         : 'Alunos do responsável'}
                   </ThemedText>
@@ -283,7 +285,7 @@ export default function DirecaoUsuariosScreen() {
                         <Pressable
                           key={option.id}
                           onPress={() => toggleId(option.id)}
-                          style={[styles.checkRow, checked && styles.checkRowSelected]}>
+                          style={[styles.checkRow, { borderColor: theme.border }, checked && [styles.checkRowSelected, { borderColor: theme.brand, backgroundColor: theme.brandSoft }]]}>
                           <ThemedText type="smallBold">
                             {checked ? '✓ ' : '○ '}
                             {option.label}
@@ -296,16 +298,17 @@ export default function DirecaoUsuariosScreen() {
               )}
 
               {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-              {info && <ThemedText style={styles.info}>{info}</ThemedText>}
-              <PrimaryButton title="Salvar" onPress={handleSave} disabled={busy} />
+              {info && <ThemedText style={[styles.info, { color: theme.brand, backgroundColor: theme.brandSoft }]}>{info}</ThemedText>}
+              <PrimaryButton title="Salvar" onPress={handleSave} loading={busy} />
               {selected && (
                 <>
                   <PrimaryButton
                     title="Enviar redefinição de senha"
                     onPress={() => handleResendReset(selected)}
                     disabled={busy}
+                    variant="outline"
                   />
-                  <PrimaryButton title="Excluir usuário" onPress={() => handleDelete(selected)} disabled={busy} />
+                  <PrimaryButton title="Excluir usuário" onPress={() => handleDelete(selected)} disabled={busy} variant="danger" />
                 </>
               )}
             </View>

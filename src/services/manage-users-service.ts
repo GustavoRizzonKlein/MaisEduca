@@ -1,5 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
-import type { ManagedProfile, ManagedUserRole } from '@/types/auth';
+import { normalizeUserRole, type ManagedProfile, type ManagedUserRole } from '@/types/auth';
 
 type ManageUsersResponse = {
   users?: ManagedProfile[];
@@ -37,7 +37,11 @@ async function invokeManageUsers(body: Record<string, unknown>): Promise<ManageU
 
 export async function listManagedUsers(): Promise<ManagedProfile[]> {
   const data = await invokeManageUsers({ action: 'list' });
-  return (data.users ?? []).filter((user) => user.role !== ('direcao' as ManagedUserRole)) as ManagedProfile[];
+  return (data.users ?? []).flatMap((user) => {
+    const role = normalizeUserRole(user.role);
+    if (!role || role === 'direcao') return [];
+    return [{ ...user, role }];
+  });
 }
 
 export async function createManagedUser(input: {

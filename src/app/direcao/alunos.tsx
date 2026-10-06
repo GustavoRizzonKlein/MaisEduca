@@ -8,12 +8,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useTheme } from '@/hooks/use-theme';
 import { createAluno, deleteAluno, listAlunos, listTurmas, updateAluno } from '@/services/school-service';
 import { canManageAlunos, homeRouteForRole } from '@/types/auth';
 import type { Aluno, Turma } from '@/types/school';
 
 export default function DirecaoAlunosScreen() {
   const { user, isLoading } = useAuth();
+  const theme = useTheme();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [editing, setEditing] = useState<Aluno | null>(null);
@@ -89,7 +91,7 @@ export default function DirecaoAlunosScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => router.replace('/direcao' as Href)}>
-            <ThemedText style={styles.back}>‹ Voltar</ThemedText>
+            <ThemedText style={[styles.back, { color: theme.brand }]}>‹ Voltar</ThemedText>
           </Pressable>
           <ThemedText type="subtitle" style={styles.title}>Alunos</ThemedText>
           <View style={authStyles.form}>
@@ -103,20 +105,20 @@ export default function DirecaoAlunosScreen() {
             <View style={styles.roleGrid}>
               <Pressable
                 onPress={() => setTurmaId(null)}
-                style={[styles.roleOption, turmaId === null && styles.roleOptionSelected]}>
+                style={[styles.roleOption, { borderColor: theme.border }, turmaId === null && [styles.roleOptionSelected, { borderColor: theme.brand, backgroundColor: theme.brandSoft }]]}>
                 <ThemedText type="smallBold">Sem turma</ThemedText>
               </Pressable>
               {turmas.map((turma) => (
                 <Pressable
                   key={turma.id}
                   onPress={() => setTurmaId(turma.id)}
-                  style={[styles.roleOption, turmaId === turma.id && styles.roleOptionSelected]}>
+                  style={[styles.roleOption, { borderColor: theme.border }, turmaId === turma.id && [styles.roleOptionSelected, { borderColor: theme.brand, backgroundColor: theme.brandSoft }]]}>
                   <ThemedText type="smallBold">{turma.nome}</ThemedText>
                 </Pressable>
               ))}
             </View>
             {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            <PrimaryButton title={editing ? 'Salvar alterações' : 'Criar aluno'} onPress={handleSave} disabled={busy} />
+            <PrimaryButton title={editing ? 'Salvar alterações' : 'Criar aluno'} onPress={handleSave} loading={busy} />
             {editing && (
               <PrimaryButton
                 title="Cancelar edição"
@@ -126,12 +128,13 @@ export default function DirecaoAlunosScreen() {
                   setTurmaId(null);
                 }}
                 disabled={busy}
+                variant="outline"
               />
             )}
           </View>
           <View style={styles.list}>
             {alunos.map((aluno) => (
-              <View key={aluno.id} style={styles.card}>
+              <View key={aluno.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
                 <View style={styles.cardCopy}>
                   <ThemedText type="smallBold">{aluno.nome}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{turmaNome(aluno.turma_id)}</ThemedText>
@@ -143,16 +146,20 @@ export default function DirecaoAlunosScreen() {
                       setNome(aluno.nome);
                       setTurmaId(aluno.turma_id);
                     }}>
-                    <ThemedText style={styles.link}>Editar</ThemedText>
+                    <ThemedText style={[styles.link, { color: theme.brand }]}>Editar</ThemedText>
                   </Pressable>
                   <Pressable onPress={() => handleDelete(aluno)}>
-                    <ThemedText style={styles.danger}>Excluir</ThemedText>
+                    <ThemedText style={[styles.danger, { color: theme.danger }]}>Excluir</ThemedText>
                   </Pressable>
                 </View>
               </View>
             ))}
             {alunos.length === 0 && (
-              <ThemedText themeColor="textSecondary">Nenhum aluno cadastrado.</ThemedText>
+              <View style={[styles.emptyState, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <ThemedText style={[styles.emptyIcon, { color: theme.brand }]}>✎</ThemedText>
+                <ThemedText type="smallBold">Nenhum aluno cadastrado</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">Cadastre o primeiro aluno para organizar as turmas.</ThemedText>
+              </View>
             )}
           </View>
         </ScrollView>
@@ -174,6 +181,16 @@ const styles = StyleSheet.create({
     ...Shadows.card,
     gap: Spacing.two,
   },
+  emptyState: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.large,
+    padding: Spacing.four,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    backgroundColor: BrandColors.backgroundElement,
+  },
+  emptyIcon: { color: BrandColors.brand, fontSize: 24 },
   cardCopy: { gap: Spacing.one },
   actions: { flexDirection: 'row', gap: Spacing.four },
   link: { color: BrandColors.brand, fontWeight: '700' },

@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const MANAGED_ROLES = ["professor", "professor_apoio", "responsavel"] as const;
+const MANAGED_ROLES = ["professor", "apoio", "responsavel"] as const;
 type ManagedRole = (typeof MANAGED_ROLES)[number];
 
 const corsHeaders = {
@@ -88,7 +88,14 @@ Deno.serve(async (req) => {
         .neq("role", "direcao")
         .order("nome");
       if (error) return json({ error: error.message }, 400);
-      return json({ users: data ?? [] });
+      return json({
+        users: (data ?? [])
+          .map((profile) => ({
+            ...profile,
+            role: profile.role === "professor_apoio" ? "apoio" : profile.role,
+          }))
+          .filter((profile) => isManagedRole(profile.role)),
+      });
     }
 
     if (action === "create") {

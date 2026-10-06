@@ -1,33 +1,51 @@
 import type { User as AuthUser } from '@supabase/supabase-js';
 
 import { getSupabase } from '@/lib/supabase';
-import { isUserRole, type PublicUser, type UserRole } from '@/types/auth';
+import { normalizeUserRole, type PublicUser } from '@/types/auth';
 
-function readRole(user: AuthUser): UserRole {
-  // Autorização: somente app_metadata (não manipulável pelo cliente).
-  const appRole = user.app_metadata?.role;
-  if (isUserRole(appRole)) return appRole;
-
-  throw new Error('A conta autenticada não possui um perfil válido.');
+export class InvalidUserProfileError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidUserProfileError';
+  }
 }
 
-function toPublicUser(user: AuthUser): PublicUser {
-  const email = user.email?.trim();
-  if (!email) {
-    throw new Error('A conta autenticada não possui e-mail.');
+async function toPublicUser(user: AuthUser): Promise<PublicUser> {
+  const { data: profile, error } = await getSupabase()
+    .from('profiles')
+    .select('id, nome, email, role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Não foi possível carregar o perfil: ${error.message}`);
+  }
+  if (!profile || profile.id !== user.id) {
+    throw new InvalidUserProfileError('A conta autenticada não possui um perfil cadastrado.');
   }
 
-  const nomeRaw = user.user_metadata?.nome;
+  const role = normalizeUserRole(profile.role);
+  const authRole = normalizeUserRole(user.app_metadata?.role);
+  if (!role || !authRole || role !== authRole) {
+    throw new InvalidUserProfileError('O perfil cadastrado não é válido ou está desatualizado.');
+  }
+
+  const email = typeof profile.email === 'string' ? profile.email.trim() : '';
+  if (!email) {
+    throw new InvalidUserProfileError('A conta autenticada não possui e-mail.');
+  }
+
+  const nomeRaw = profile.nome;
   const nome = typeof nomeRaw === 'string' ? nomeRaw.trim() : '';
   if (!nome) {
-    throw new Error('A conta autenticada não possui nome nos metadados.');
+    throw new InvalidUserProfileError('A conta autenticada não possui nome nos metadados.');
   }
 
   return {
     id: user.id,
     nome,
     email,
-    role: readRole(user),
+    role,
   };
 }
 

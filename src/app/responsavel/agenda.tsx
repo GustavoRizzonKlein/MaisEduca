@@ -2,7 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 
 import { AgendaScreen } from '@/components/agenda-screen';
 import { useAuth } from '@/contexts/auth-context';
-import { canEditAgenda, homeRouteForRole } from '@/types/auth';
+import { homeRouteForRole } from '@/types/auth';
 
 export default function ResponsavelAgendaRoute() {
   const { user, isLoading } = useAuth();
@@ -15,7 +15,6 @@ export default function ResponsavelAgendaRoute() {
       <Stack.Screen options={{ headerShown: false }} />
       <AgendaScreen
         studentId="student-joao"
-        canEdit={canEditAgenda(user.role)}
         fallbackRoute="/responsavel"
       />
     </>

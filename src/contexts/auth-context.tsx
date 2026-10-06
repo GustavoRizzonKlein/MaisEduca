@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import {
   getSession,
+  InvalidUserProfileError,
   requestPasswordReset as sendPasswordResetEmail,
   signIn,
   signOut,
@@ -11,6 +12,7 @@ import type { PublicUser } from '@/types/auth';
 type AuthContextValue = {
   user: PublicUser | null;
   isLoading: boolean;
+  hasInvalidProfile: boolean;
   error: string | null;
   login: (email: string, senha: string) => Promise<PublicUser>;
   logout: () => Promise<void>;
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasInvalidProfile, setHasInvalidProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(setUser)
       .catch((sessionError: unknown) => {
         setError(sessionError instanceof Error ? sessionError.message : 'Não foi possível carregar a sessão.');
+        setHasInvalidProfile(sessionError instanceof InvalidUserProfileError);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -38,15 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       isLoading,
+      hasInvalidProfile,
       error,
       login: async (email, senha) => {
         setError(null);
         try {
           const authenticatedUser = await signIn(email, senha);
           setUser(authenticatedUser);
+          setHasInvalidProfile(false);
           return authenticatedUser;
         } catch (loginError: unknown) {
           const message = loginError instanceof Error ? loginError.message : 'Não foi possível entrar.';
+          setHasInvalidProfile(loginError instanceof InvalidUserProfileError);
           setError(message);
           throw new Error(message);
         }
@@ -59,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setError(logoutError instanceof Error ? logoutError.message : 'Não foi possível sair.');
         } finally {
           setUser(null);
+          setHasInvalidProfile(false);
         }
       },
       requestPasswordReset: async (email) => {
@@ -74,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       clearError: () => setError(null),
     }),
-    [error, isLoading, user],
+    [error, hasInvalidProfile, isLoading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

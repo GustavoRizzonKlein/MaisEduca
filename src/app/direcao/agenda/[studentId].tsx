@@ -2,7 +2,7 @@ import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 
 import { AgendaScreen } from '@/components/agenda-screen';
 import { useAuth } from '@/contexts/auth-context';
-import { canEditAgenda, canViewAcompanhamento, homeRouteForRole } from '@/types/auth';
+import { canViewAcompanhamento, homeRouteForRole } from '@/types/auth';
 
 export default function DirecaoAgendaRoute() {
   const { user, isLoading } = useAuth();
@@ -18,7 +18,6 @@ export default function DirecaoAgendaRoute() {
       <Stack.Screen options={{ headerShown: false }} />
       <AgendaScreen
         studentId={studentId}
-        canEdit={canEditAgenda(user.role)}
         fallbackRoute="/direcao"
       />
     </>

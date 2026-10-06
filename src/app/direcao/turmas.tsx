@@ -8,12 +8,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useTheme } from '@/hooks/use-theme';
 import { createTurma, deleteTurma, listTurmas, updateTurma } from '@/services/school-service';
 import { canManageTurmas, homeRouteForRole } from '@/types/auth';
 import type { Turma } from '@/types/school';
 
 export default function DirecaoTurmasScreen() {
   const { user, isLoading } = useAuth();
+  const theme = useTheme();
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [editing, setEditing] = useState<Turma | null>(null);
   const [nome, setNome] = useState('');
@@ -79,7 +81,7 @@ export default function DirecaoTurmasScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => router.replace('/direcao' as Href)}>
-            <ThemedText style={styles.back}>‹ Voltar</ThemedText>
+            <ThemedText style={[styles.back, { color: theme.brand }]}>‹ Voltar</ThemedText>
           </Pressable>
           <ThemedText type="subtitle" style={styles.title}>Turmas</ThemedText>
           <View style={authStyles.form}>
@@ -90,7 +92,7 @@ export default function DirecaoTurmasScreen() {
               placeholder="Ex.: 5º ano A"
             />
             {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            <PrimaryButton title={editing ? 'Salvar alterações' : 'Criar turma'} onPress={handleSave} disabled={busy} />
+            <PrimaryButton title={editing ? 'Salvar alterações' : 'Criar turma'} onPress={handleSave} loading={busy} />
             {editing && (
               <PrimaryButton
                 title="Cancelar edição"
@@ -99,12 +101,13 @@ export default function DirecaoTurmasScreen() {
                   setNome('');
                 }}
                 disabled={busy}
+                variant="outline"
               />
             )}
           </View>
           <View style={styles.list}>
             {turmas.map((turma) => (
-              <View key={turma.id} style={styles.card}>
+              <View key={turma.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
                 <ThemedText type="smallBold" style={styles.cardTitle}>{turma.nome}</ThemedText>
                 <View style={styles.actions}>
                   <Pressable
@@ -112,16 +115,20 @@ export default function DirecaoTurmasScreen() {
                       setEditing(turma);
                       setNome(turma.nome);
                     }}>
-                    <ThemedText style={styles.link}>Editar</ThemedText>
+                    <ThemedText style={[styles.link, { color: theme.brand }]}>Editar</ThemedText>
                   </Pressable>
                   <Pressable onPress={() => handleDelete(turma)}>
-                    <ThemedText style={styles.danger}>Excluir</ThemedText>
+                    <ThemedText style={[styles.danger, { color: theme.danger }]}>Excluir</ThemedText>
                   </Pressable>
                 </View>
               </View>
             ))}
             {turmas.length === 0 && (
-              <ThemedText themeColor="textSecondary">Nenhuma turma cadastrada.</ThemedText>
+              <View style={[styles.emptyState, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <ThemedText style={[styles.emptyIcon, { color: theme.learning }]}>▦</ThemedText>
+                <ThemedText type="smallBold">Nenhuma turma cadastrada</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">Crie uma turma para começar a organizar a escola.</ThemedText>
+              </View>
             )}
           </View>
         </ScrollView>
@@ -144,6 +151,16 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   cardTitle: { flex: 1 },
+  emptyState: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.large,
+    padding: Spacing.four,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    backgroundColor: BrandColors.backgroundElement,
+  },
+  emptyIcon: { color: BrandColors.learning, fontSize: 24 },
   actions: { flexDirection: 'row', gap: Spacing.four },
   link: { color: BrandColors.brand, fontWeight: '700' },
   danger: { color: BrandColors.danger, fontWeight: '700' },

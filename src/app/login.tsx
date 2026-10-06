@@ -6,13 +6,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthField, authStyles, PrimaryButton } from '@/components/auth-ui';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { SurfaceCard } from '@/components/surface-card';
 import { BrandColors, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useTheme } from '@/hooks/use-theme';
 import { homeRouteForRole } from '@/types/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { user, login, requestPasswordReset, error, clearError } = useAuth();
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,15 +63,15 @@ export default function LoginScreen() {
     <ThemedView style={authStyles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={authStyles.content} keyboardShouldPersistTaps="handled">
-          <ThemedView type="backgroundElement" style={styles.brandMark}>
-            <ThemedText style={styles.brandMarkText}>M</ThemedText>
+          <ThemedView type="backgroundElement" style={[styles.brandMark, { backgroundColor: theme.brandSoft }]}>
+            <ThemedText style={[styles.brandMarkText, { color: theme.brand }]}>M</ThemedText>
           </ThemedView>
-          <ThemedText style={authStyles.logo}>MaisEduca</ThemedText>
+          <ThemedText style={[authStyles.logo, { color: theme.brand }]}>MaisEduca</ThemedText>
           <ThemedText themeColor="textSecondary" style={authStyles.subtitle}>
             Conectando escola, professores e famílias.
           </ThemedText>
 
-          <ThemedView style={authStyles.form}>
+          <SurfaceCard style={authStyles.form}>
             <AuthField
               label="E-mail"
               value={email}
@@ -86,12 +89,12 @@ export default function LoginScreen() {
               placeholder="Digite sua senha"
             />
             {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            {info && <ThemedText style={styles.info}>{info}</ThemedText>}
-            <PrimaryButton title="Entrar" onPress={handleLogin} disabled={isSubmitting} />
+            {info && <ThemedText style={[styles.info, { color: theme.brand, backgroundColor: theme.brandSoft }]}>{info}</ThemedText>}
+            <PrimaryButton title="Entrar" onPress={handleLogin} loading={isSubmitting} />
             <Pressable style={authStyles.linkButton} onPress={handlePasswordReset} disabled={isSubmitting}>
               <ThemedText style={authStyles.linkText}>Esqueci minha senha</ThemedText>
             </Pressable>
-          </ThemedView>
+          </SurfaceCard>
 
           <ThemedText themeColor="textSecondary" style={authStyles.helper}>
             Contas são criadas pela Direção da escola.
