@@ -1,6 +1,6 @@
 import { Redirect, router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthField, PrimaryButton, authStyles } from '@/components/auth-ui';
@@ -20,16 +20,24 @@ export default function DirecaoTurmasScreen() {
   const [editing, setEditing] = useState<Turma | null>(null);
   const [nome, setNome] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    setTurmas(await listTurmas());
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setTurmas(await listTurmas());
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (!user || !canManageTurmas(user.role)) return;
     refresh().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Não foi possível carregar turmas.');
+      setLoadError(err instanceof Error ? err.message : 'Não foi possível carregar as turmas. Tente novamente.');
     });
   }, [user, refresh]);
 
@@ -84,6 +92,17 @@ export default function DirecaoTurmasScreen() {
             <ThemedText style={[styles.back, { color: theme.brand }]}>‹ Voltar</ThemedText>
           </Pressable>
           <ThemedText type="subtitle" style={styles.title}>Turmas</ThemedText>
+          <ThemedText themeColor="textSecondary">Escolha uma turma para visualizar e cadastrar seus alunos.</ThemedText>
+          {loadError && (
+            <View style={styles.loadError}>
+              <ThemedText style={authStyles.error}>{loadError}</ThemedText>
+              <PrimaryButton
+                title="Tentar novamente"
+                onPress={() => refresh().catch((err: unknown) => setLoadError(err instanceof Error ? err.message : 'Não foi possível carregar as turmas. Tente novamente.'))}
+                variant="outline"
+              />
+            </View>
+          )}
           <View style={authStyles.form}>
             <AuthField
               label={editing ? 'Editar turma' : 'Nova turma'}
@@ -105,32 +124,46 @@ export default function DirecaoTurmasScreen() {
               />
             )}
           </View>
-          <View style={styles.list}>
-            {turmas.map((turma) => (
-              <View key={turma.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-                <ThemedText type="smallBold" style={styles.cardTitle}>{turma.nome}</ThemedText>
-                <View style={styles.actions}>
+          {loading ? (
+            <View style={styles.loading}>
+              <ActivityIndicator color={theme.brand} />
+              <ThemedText themeColor="textSecondary">Carregando turmas...</ThemedText>
+            </View>
+          ) : (
+            <View style={styles.list}>
+              {turmas.map((turma) => (
+                <View key={turma.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
                   <Pressable
-                    onPress={() => {
-                      setEditing(turma);
-                      setNome(turma.nome);
-                    }}>
-                    <ThemedText style={[styles.link, { color: theme.brand }]}>Editar</ThemedText>
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver alunos da turma ${turma.nome}`}
+                    style={styles.openClass}
+                    onPress={() => router.push(`/direcao/turmas/${turma.id}` as Href)}>
+                    <ThemedText type="smallBold" style={styles.cardTitle}>{turma.nome}</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.brand }}>Ver alunos ›</ThemedText>
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(turma)}>
-                    <ThemedText style={[styles.danger, { color: theme.danger }]}>Excluir</ThemedText>
-                  </Pressable>
+                  <View style={styles.actions}>
+                    <Pressable
+                      onPress={() => {
+                        setEditing(turma);
+                        setNome(turma.nome);
+                      }}>
+                      <ThemedText style={[styles.link, { color: theme.brand }]}>Editar</ThemedText>
+                    </Pressable>
+                    <Pressable onPress={() => handleDelete(turma)}>
+                      <ThemedText style={[styles.danger, { color: theme.danger }]}>Excluir</ThemedText>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
-            ))}
-            {turmas.length === 0 && (
-              <View style={[styles.emptyState, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                <ThemedText style={[styles.emptyIcon, { color: theme.learning }]}>▦</ThemedText>
-                <ThemedText type="smallBold">Nenhuma turma cadastrada</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">Crie uma turma para começar a organizar a escola.</ThemedText>
-              </View>
-            )}
-          </View>
+              ))}
+              {turmas.length === 0 && !loadError && (
+                <View style={[styles.emptyState, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                  <ThemedText style={[styles.emptyIcon, { color: theme.learning }]}>▦</ThemedText>
+                  <ThemedText type="smallBold">Nenhuma turma cadastrada</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">Crie uma turma para começar a organizar a escola.</ThemedText>
+                </View>
+              )}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -143,6 +176,8 @@ const styles = StyleSheet.create({
   back: { color: BrandColors.brand, fontWeight: '700' },
   title: { marginBottom: Spacing.one },
   list: { gap: Spacing.two, marginTop: Spacing.four },
+  loading: { alignItems: 'center', gap: Spacing.two, padding: Spacing.four },
+  loadError: { gap: Spacing.two },
   card: {
     borderRadius: Radius.medium,
     padding: Spacing.three,
@@ -150,6 +185,7 @@ const styles = StyleSheet.create({
     ...Shadows.card,
     gap: Spacing.two,
   },
+  openClass: { gap: Spacing.one, minHeight: 44, justifyContent: 'center' },
   cardTitle: { flex: 1 },
   emptyState: {
     alignItems: 'center',

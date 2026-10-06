@@ -43,6 +43,7 @@ function AuthorizedStack() {
         <Stack.Screen name="direcao/index" />
         <Stack.Screen name="direcao/usuarios" />
         <Stack.Screen name="direcao/turmas" />
+        <Stack.Screen name="direcao/turmas/[turmaId]" />
         <Stack.Screen name="direcao/alunos" />
         <Stack.Screen name="direcao/agenda/[studentId]" />
       </Stack.Protected>

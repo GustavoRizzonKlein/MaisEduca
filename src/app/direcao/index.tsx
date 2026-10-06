@@ -14,7 +14,6 @@ import { mockStudents } from '@/mocks/teacher';
 import {
   canApproveComunicados,
   canAssociateResponsaveis,
-  canManageAlunos,
   canManageProfessorApoio,
   canManageProfessores,
   canManageResponsaveis,
@@ -49,7 +48,7 @@ export default function DirecaoHomeScreen() {
           </SurfaceCard>
 
           <View style={styles.section}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Gestão</ThemedText>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>Cadastros</ThemedText>
             {canManageUsers(user.role) && (
               <Pressable style={({ pressed }) => [styles.card, { backgroundColor: theme.backgroundElement }, pressed && styles.cardPressed]} onPress={() => router.push('/direcao/usuarios' as Href)}>
                 <View style={[styles.featureIcon, { backgroundColor: theme.informationSoft }]}>
@@ -72,18 +71,6 @@ export default function DirecaoHomeScreen() {
                 <View style={styles.cardCopy}>
                   <ThemedText type="smallBold">Turmas</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">Cadastrar e gerenciar turmas</ThemedText>
-                </View>
-                <ThemedText type="small" style={[styles.cardAction, { color: theme.attention }]}>Abrir ›</ThemedText>
-              </Pressable>
-            )}
-            {canManageAlunos(user.role) && (
-              <Pressable style={({ pressed }) => [styles.card, { backgroundColor: theme.backgroundElement }, pressed && styles.cardPressed]} onPress={() => router.push('/direcao/alunos' as Href)}>
-                <View style={[styles.featureIcon, { backgroundColor: theme.successSoft }]}>
-                  <AppIcon name={{ ios: 'book.closed.fill', android: 'auto_stories', web: 'auto_stories' }} color={theme.success} size={22} />
-                </View>
-                <View style={styles.cardCopy}>
-                  <ThemedText type="smallBold">Alunos</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">Cadastrar e gerenciar alunos</ThemedText>
                 </View>
                 <ThemedText type="small" style={[styles.cardAction, { color: theme.attention }]}>Abrir ›</ThemedText>
               </Pressable>

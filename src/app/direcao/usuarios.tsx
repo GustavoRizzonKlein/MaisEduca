@@ -159,7 +159,10 @@ export default function DirecaoUsuariosScreen() {
   }
 
   async function handleDelete(profile: ManagedProfile) {
-    Alert.alert('Excluir usuário?', `Remover ${profile.nome}? Os vínculos serão apagados.`, [
+    const confirmation = profile.role === 'responsavel'
+      ? `Remover ${profile.nome}? Transfira os alunos vinculados antes de excluir este responsável.`
+      : `Remover ${profile.nome}? Os vínculos serão apagados.`;
+    Alert.alert('Excluir usuário?', confirmation, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',

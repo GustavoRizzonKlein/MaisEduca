@@ -24,9 +24,28 @@ async function clearAssociations(
   admin: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  await admin.from("professor_turmas").delete().eq("professor_id", userId);
-  await admin.from("professor_apoio_alunos").delete().eq("professor_id", userId);
-  await admin.from("responsavel_alunos").delete().eq("responsavel_id", userId);
+  const results = await Promise.all([
+    admin.from("professor_turmas").delete().eq("professor_id", userId),
+    admin.from("professor_apoio_alunos").delete().eq("professor_id", userId),
+    admin.from("responsavel_alunos").delete().eq("responsavel_id", userId),
+  ]);
+  const failed = results.find((result) => result.error);
+  if (failed?.error) {
+    throw new Error(`Falha ao remover vínculos do usuário: ${failed.error.message}`);
+  }
+}
+
+async function hasLinkedStudents(
+  admin: ReturnType<typeof createClient>,
+  profileId: string,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("responsavel_alunos")
+    .select("aluno_id")
+    .eq("responsavel_id", profileId)
+    .limit(1);
+  if (error) throw new Error(`Não foi possível verificar os alunos vinculados: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
 async function upsertProfile(
@@ -168,6 +187,11 @@ Deno.serve(async (req) => {
       if (role !== undefined && !isManagedRole(role)) {
         return json({ error: "Perfil inválido." }, 400);
       }
+      if (existing.role === "responsavel" && role !== undefined && role !== "responsavel") {
+        if (await hasLinkedStudents(admin, id)) {
+          return json({ error: "Transfira os alunos para outro responsável antes de alterar este perfil." }, 409);
+        }
+      }
 
       const updates: {
         email?: string;
@@ -233,6 +257,11 @@ Deno.serve(async (req) => {
       }
       if (existing.role === "direcao") {
         return json({ error: "A conta da Direção não pode ser excluída por este fluxo." }, 400);
+      }
+      if (existing.role === "responsavel") {
+        if (await hasLinkedStudents(admin, id)) {
+          return json({ error: "Transfira os alunos para outro responsável antes de excluir este usuário." }, 409);
+        }
       }
 
       const { error } = await admin.auth.admin.deleteUser(id);
