@@ -89,16 +89,12 @@ export function can(role: UserRole | null | undefined, permission: Permission): 
   return isUserRole(role) && ROLE_PERMISSIONS[role].includes(permission);
 }
 
-export function homeRouteForRole(role: UserRole): Href {
-  switch (role) {
-    case 'direcao':
-      return '/direcao' as Href;
-    case 'professor':
-    case 'apoio':
-      return '/professor' as Href;
-    case 'responsavel':
-      return '/responsavel' as Href;
-  }
+/**
+ * Todos os perfis compartilham a mesma área com abas (`/inicio`); o conteúdo,
+ * as ações e as abas visíveis mudam conforme as permissões do perfil.
+ */
+export function homeRouteForRole(_role: UserRole): Href {
+  return '/inicio';
 }
 
 /** Professor e Professor de Apoio: mesmas funcionalidades operacionais. */

@@ -1,17 +1,13 @@
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AuthField, authStyles, PrimaryButton } from '@/components/auth-ui';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { SurfaceCard } from '@/components/surface-card';
-import { Spacing } from '@/constants/theme';
+import { AuthLayout } from '@/components/auth-layout';
+import { Button, Input, Notice } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
-import { useTheme } from '@/hooks/use-theme';
 import { getSupabase } from '@/lib/supabase';
+
+const SUCCESS_MESSAGE = 'Senha redefinida com sucesso.';
 
 function extractRecoveryCode(rawUrl: string | null): string | null {
   if (!rawUrl) {
@@ -79,7 +75,6 @@ async function hydratePasswordRecoverySession(rawUrl: string | null): Promise<bo
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const { updatePassword, error, clearError } = useAuth();
-  const theme = useTheme();
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [isCheckingRecovery, setIsCheckingRecovery] = useState(true);
@@ -145,7 +140,7 @@ export default function ResetPasswordScreen() {
     setIsSubmitting(true);
     try {
       await updatePassword(novaSenha);
-      setInfo('Senha redefinida com sucesso.');
+      setInfo(SUCCESS_MESSAGE);
       setNovaSenha('');
       setConfirmarSenha('');
       router.replace('/login');
@@ -157,75 +152,45 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <ThemedView style={authStyles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={authStyles.content} keyboardShouldPersistTaps="handled">
-          <ThemedText style={[authStyles.logo, { color: theme.brand }]}>Nova senha</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Digite sua nova senha.
-          </ThemedText>
-
-          <SurfaceCard style={authStyles.form}>
-            {isCheckingRecovery ? (
-              <ThemedText themeColor="textSecondary" style={styles.loadingText}>
-                Validando o link de recuperação...
-              </ThemedText>
-            ) : null}
-
-            <AuthField
-              label="Nova senha"
-              value={novaSenha}
-              onChangeText={setNovaSenha}
-              secureTextEntry
-              placeholder="Digite sua nova senha"
-              editable={isRecoveryReady}
-            />
-            <AuthField
-              label="Confirmar nova senha"
-              value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
-              secureTextEntry
-              placeholder="Confirme sua nova senha"
-              editable={isRecoveryReady}
-            />
-
-            {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            {info && (
-              <ThemedText style={[styles.info, { color: theme.brand, backgroundColor: theme.brandSoft }]}>
-                {info}
-              </ThemedText>
-            )}
-
-            <PrimaryButton
-              title="Redefinir senha"
-              onPress={handleSubmit}
-              loading={isSubmitting}
-              disabled={isCheckingRecovery || !isRecoveryReady}
-            />
-            <Pressable style={authStyles.linkButton} onPress={() => router.replace('/login')}>
-              <ThemedText style={authStyles.linkText}>Voltar para o login</ThemedText>
-            </Pressable>
-          </SurfaceCard>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+    <AuthLayout
+      icon="shield"
+      iconTone="green"
+      title="Nova senha"
+      subtitle="Crie uma nova senha para acessar o MaisEduca.">
+      {isCheckingRecovery ? <Notice tone="info" message="Validando o link de recuperação..." /> : null}
+      {!isCheckingRecovery && !isRecoveryReady ? (
+        <Notice tone="error" message="Link de recuperação inválido ou expirado. Solicite um novo e-mail de recuperação." />
+      ) : null}
+      <Input
+        label="Nova senha"
+        icon="lock"
+        password
+        value={novaSenha}
+        onChangeText={setNovaSenha}
+        placeholder="Digite sua nova senha"
+        helperText="Mínimo de 6 caracteres."
+        textContentType="newPassword"
+        editable={isRecoveryReady && !isSubmitting}
+      />
+      <Input
+        label="Confirmar nova senha"
+        icon="lock"
+        password
+        value={confirmarSenha}
+        onChangeText={setConfirmarSenha}
+        placeholder="Confirme sua nova senha"
+        textContentType="newPassword"
+        editable={isRecoveryReady && !isSubmitting}
+      />
+      {error ? <Notice tone="error" message={error} /> : null}
+      {info ? <Notice tone={info === SUCCESS_MESSAGE ? 'success' : 'error'} message={info} /> : null}
+      <Button
+        title="Redefinir senha"
+        onPress={handleSubmit}
+        loading={isSubmitting}
+        disabled={isCheckingRecovery || !isRecoveryReady}
+      />
+      <Button title="Voltar para o login" variant="ghost" icon="chevronLeft" onPress={() => router.replace('/login')} />
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  subtitle: {
-    textAlign: 'center',
-    marginBottom: Spacing.four,
-  },
-  loadingText: {
-    textAlign: 'center',
-  },
-  info: {
-    borderRadius: 12,
-    padding: Spacing.three,
-    lineHeight: 20,
-  },
-});

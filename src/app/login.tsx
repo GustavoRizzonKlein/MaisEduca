@@ -1,32 +1,34 @@
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthField, authStyles, PrimaryButton } from '@/components/auth-ui';
+import { AuthLayout } from '@/components/auth-layout';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { SurfaceCard } from '@/components/surface-card';
-import { BrandColors, Radius, Spacing } from '@/constants/theme';
+import { Button, Input, Notice } from '@/components/ui';
+import { MinTouchSize, Palette, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
-import { useTheme } from '@/hooks/use-theme';
 import { homeRouteForRole } from '@/types/auth';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
   const { user, login, error, clearError } = useAuth();
-  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; senha?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (user) return <Redirect href={homeRouteForRole(user.role)} />;
 
   async function handleLogin() {
     clearError();
-    if (!email.trim() || !senha) {
-      return;
-    }
+    const nextErrors: typeof fieldErrors = {};
+    if (!email.trim()) nextErrors.email = 'Informe seu e-mail.';
+    else if (!EMAIL_PATTERN.test(email.trim())) nextErrors.email = 'Informe um e-mail válido.';
+    if (!senha) nextErrors.senha = 'Informe sua senha.';
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     setIsSubmitting(true);
     try {
@@ -40,73 +42,73 @@ export default function LoginScreen() {
   }
 
   return (
-    <ThemedView style={authStyles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={authStyles.content} keyboardShouldPersistTaps="handled">
-          <ThemedView type="backgroundElement" style={[styles.brandMark, { backgroundColor: theme.brandSoft }]}>
-            <ThemedText style={[styles.brandMarkText, { color: theme.brand }]}>M</ThemedText>
-          </ThemedView>
-          <ThemedText style={[authStyles.logo, { color: theme.brand }]}>MaisEduca</ThemedText>
-          <ThemedText themeColor="textSecondary" style={authStyles.subtitle}>
-            Conectando escola, professores e famílias.
+    <AuthLayout
+      showLogo
+      title="Bem-vindo!"
+      subtitle="Faça login para continuar"
+      footer={
+        <>
+          <View style={styles.divider}>
+            <View style={styles.line} />
+            <ThemedText type="caption" themeColor="textMuted">ou</ThemedText>
+            <View style={styles.line} />
+          </View>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+            Ainda não tem conta? As contas são criadas pela Direção da escola.
           </ThemedText>
-
-          <SurfaceCard style={authStyles.form}>
-            <AuthField
-              label="E-mail"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              placeholder="seu@email.com"
-            />
-            <AuthField
-              label="Senha"
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-              placeholder="Digite sua senha"
-            />
-            {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            <PrimaryButton title="Entrar" onPress={handleLogin} loading={isSubmitting} />
-            <Pressable style={authStyles.linkButton} onPress={() => router.push('/recuperar-senha' as any)} disabled={isSubmitting}>
-              <ThemedText style={authStyles.linkText}>Esqueci minha senha</ThemedText>
-            </Pressable>
-          </SurfaceCard>
-
-          <ThemedText themeColor="textSecondary" style={authStyles.helper}>
-            Contas são criadas pela Direção da escola.
-          </ThemedText>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+        </>
+      }>
+      <Input
+        label="E-mail"
+        icon="mail"
+        value={email}
+        onChangeText={(value) => {
+          setEmail(value);
+          setFieldErrors((current) => ({ ...current, email: undefined }));
+        }}
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        placeholder="seu@email.com"
+        error={fieldErrors.email}
+        editable={!isSubmitting}
+        returnKeyType="next"
+      />
+      <Input
+        label="Senha"
+        icon="lock"
+        password
+        value={senha}
+        onChangeText={(value) => {
+          setSenha(value);
+          setFieldErrors((current) => ({ ...current, senha: undefined }));
+        }}
+        autoComplete="password"
+        textContentType="password"
+        placeholder="Digite sua senha"
+        error={fieldErrors.senha}
+        editable={!isSubmitting}
+        returnKeyType="go"
+        onSubmitEditing={handleLogin}
+      />
+      {error ? <Notice tone="error" message={error} /> : null}
+      <Button title="Entrar" onPress={handleLogin} loading={isSubmitting} style={styles.submit} />
+      <Pressable
+        accessibilityRole="link"
+        style={styles.link}
+        onPress={() => router.push('/recuperar-senha' as Href)}
+        disabled={isSubmitting}>
+        <ThemedText type="link">Esqueceu sua senha?</ThemedText>
+      </Pressable>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  brandMark: {
-    alignSelf: 'center',
-    width: 64,
-    height: 64,
-    borderRadius: Radius.large,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.brandSoft,
-    marginBottom: Spacing.two,
-  },
-  brandMarkText: {
-    color: BrandColors.brand,
-    fontSize: 30,
-    fontWeight: '800',
-  },
-  info: {
-    color: BrandColors.brand,
-    backgroundColor: BrandColors.brandSoft,
-    borderRadius: Radius.small,
-    padding: Spacing.three,
-  },
+  submit: { marginTop: Spacing.two },
+  link: { alignSelf: 'center', minHeight: MinTouchSize, justifyContent: 'center', paddingHorizontal: Spacing.three },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, alignSelf: 'stretch' },
+  line: { flex: 1, height: 1, backgroundColor: Palette.border },
+  center: { textAlign: 'center' },
 });

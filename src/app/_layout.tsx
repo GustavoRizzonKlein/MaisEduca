@@ -1,18 +1,26 @@
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { Palette } from '@/constants/theme';
 import { AgendaProvider } from '@/contexts/agenda-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { hasAnyRole } from '@/types/auth';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: Palette.background, card: Palette.surface, border: Palette.border, primary: Palette.bluePrimary, text: Palette.textPrimary },
+};
+
+export default function RootLayout() {
   return (
-    <ThemeProvider value={DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
       <AuthProvider>
         <AgendaProvider>
+          <StatusBar style="dark" />
           <AnimatedSplashOverlay />
           <AuthorizedStack />
         </AgendaProvider>
@@ -23,15 +31,16 @@ export default function TabLayout() {
 
 function AuthorizedStack() {
   const { user, isLoading, hasInvalidProfile } = useAuth();
+  const isSignedIn = !isLoading && Boolean(user);
   const isDirecao = !isLoading && hasAnyRole(user?.role, ['direcao']);
   const isProfessor = !isLoading && hasAnyRole(user?.role, ['professor', 'apoio']);
-  const isResponsavel = !isLoading && hasAnyRole(user?.role, ['responsavel']);
-  const isSignedOut = !isLoading && !user && !hasInvalidProfile;
+  // Liberado também durante o carregamento da sessão: sem isso, deep links como
+  // /reset-password?code=... (e-mail de recuperação) eram redirecionados antes de abrir.
+  const isSignedOut = !user && !hasInvalidProfile;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.background } }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="explore" />
       <Stack.Protected guard={isSignedOut}>
         <Stack.Screen name="login" />
         <Stack.Screen name="cadastro" />
@@ -41,23 +50,18 @@ function AuthorizedStack() {
       <Stack.Protected guard={hasInvalidProfile}>
         <Stack.Screen name="acesso-negado" />
       </Stack.Protected>
+      <Stack.Protected guard={isSignedIn}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="alunos/[alunoId]" />
+      </Stack.Protected>
       <Stack.Protected guard={isDirecao}>
-        <Stack.Screen name="direcao/index" />
         <Stack.Screen name="direcao/usuarios" />
         <Stack.Screen name="direcao/turmas" />
         <Stack.Screen name="direcao/turmas/[turmaId]" />
-        <Stack.Screen name="direcao/alunos" />
-        <Stack.Screen name="direcao/agenda/[studentId]" />
       </Stack.Protected>
       <Stack.Protected guard={isProfessor}>
-        <Stack.Screen name="professor/index" />
         <Stack.Screen name="professor/turmas" />
         <Stack.Screen name="professor/turmas/[turmaId]" />
-        <Stack.Screen name="professor/agenda/[studentId]" />
-      </Stack.Protected>
-      <Stack.Protected guard={isResponsavel}>
-        <Stack.Screen name="responsavel/index" />
-        <Stack.Screen name="responsavel/agenda" />
       </Stack.Protected>
     </Stack>
   );

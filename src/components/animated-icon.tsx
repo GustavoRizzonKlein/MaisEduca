@@ -4,7 +4,7 @@ import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { BrandColors } from '@/constants/theme';
+import { Palette } from '@/constants/theme';
 
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
@@ -126,15 +126,15 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BrandColors.brandSoft,
+    backgroundColor: Palette.blueLight,
   },
   brandMarkText: {
-    color: BrandColors.brand,
+    color: Palette.blueInk,
     fontSize: 36,
     fontWeight: '800',
   },
   brandName: {
-    color: BrandColors.text,
+    color: Palette.textPrimary,
     fontSize: 19,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     height: 144,
     position: 'absolute',
     borderRadius: 72,
-    backgroundColor: BrandColors.brandSoft,
+    backgroundColor: Palette.blueLight,
     opacity: 0.8,
   },
   iconContainer: {
@@ -160,19 +160,19 @@ const styles = StyleSheet.create({
   },
   background: {
     borderRadius: 40,
-    backgroundColor: BrandColors.brandSoft,
+    backgroundColor: Palette.blueLight,
     width: 128,
     height: 128,
     position: 'absolute',
   },
   iconMarkText: {
-    color: BrandColors.onBrand,
+    color: Palette.blueInk,
     fontSize: 54,
     fontWeight: '800',
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: BrandColors.background,
+    backgroundColor: Palette.background,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,

@@ -1,30 +1,34 @@
-import { Redirect, router, useLocalSearchParams, type Href } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
-import { AppIcon } from '@/components/app-icon';
-import { PrimaryButton, authStyles } from '@/components/auth-ui';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { SurfaceCard } from '@/components/surface-card';
+import {
+  Avatar,
+  EmptyState,
+  ErrorState,
+  ListItem,
+  LoadingState,
+  PageHeader,
+  Screen,
+  SearchInput,
+  UnauthorizedState,
+} from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
-import { useTheme } from '@/hooks/use-theme';
-import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { listAlunosByTurma, listTurmas } from '@/services/school-service';
-import { canAccessProfessorArea, homeRouteForRole } from '@/types/auth';
+import { canAccessProfessorArea } from '@/types/auth';
 import type { Aluno, Turma } from '@/types/school';
 
 export default function ProfessorTurmaStudentsScreen() {
   const { turmaId: routeTurmaId } = useLocalSearchParams<{ turmaId: string | string[] }>();
   const turmaId = Array.isArray(routeTurmaId) ? routeTurmaId[0] : routeTurmaId;
-  const { user, isLoading } = useAuth();
-  const theme = useTheme();
+  const { user } = useAuth();
   const [turma, setTurma] = useState<Turma | null>(null);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!turmaId) return;
@@ -47,7 +51,7 @@ export default function ProfessorTurmaStudentsScreen() {
     }
 
     loadStudents();
-  }, [turmaId]);
+  }, [turmaId, reloadKey]);
 
   const filteredAlunos = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
@@ -55,143 +59,48 @@ export default function ProfessorTurmaStudentsScreen() {
     return alunos.filter((aluno) => aluno.nome.toLowerCase().includes(searchValue));
   }, [alunos, search]);
 
-  if (isLoading) return null;
-  if (!user) return <Redirect href="/login" />;
-  if (!canAccessProfessorArea(user.role)) return <Redirect href={homeRouteForRole(user.role)} />;
+  if (!user || !canAccessProfessorArea(user.role)) return <UnauthorizedState />;
 
   return (
-    <ThemedView style={authStyles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-            <Pressable onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              <ThemedText style={[styles.backButtonText, { color: theme.text }]}>‹</ThemedText>
-            </Pressable>
-            <View style={styles.headerText}>
-              <ThemedText type="small" themeColor="textSecondary">Turma</ThemedText>
-              <ThemedText type="subtitle" style={styles.title}>{turma?.nome ?? 'Carregando turma...'}</ThemedText>
-            </View>
-          </View>
-
-          <SurfaceCard style={styles.summaryCard}>
-            <View style={styles.summaryTitle}>
-              <ThemedText type="small" themeColor="textSecondary">Alunos</ThemedText>
-              <ThemedText type="smallBold">{alunos.length} cadastrados</ThemedText>
-            </View>
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar aluno..."
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.searchInput, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
+    <Screen
+      edges={['top', 'left', 'right', 'bottom']}
+      header={
+        <PageHeader
+          title={turma?.nome ?? 'Turma'}
+          subtitle={loading ? 'Carregando...' : `${alunos.length} ${alunos.length === 1 ? 'aluno' : 'alunos'}`}
+          showBack
+          backFallback="/professor/turmas">
+          {alunos.length > 0 ? <SearchInput value={search} onChangeText={setSearch} placeholder="Buscar aluno..." /> : null}
+        </PageHeader>
+      }>
+      {loading ? (
+        <LoadingState rows={4} label="Carregando alunos" />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => setReloadKey((key) => key + 1)} />
+      ) : filteredAlunos.length === 0 ? (
+        <EmptyState
+          icon="students"
+          tone="green"
+          title="Nenhum aluno encontrado"
+          description={alunos.length === 0 ? 'Nenhum aluno está vinculado a esta turma no momento.' : 'Tente buscar por outro nome.'}
+        />
+      ) : (
+        <View style={styles.list}>
+          {filteredAlunos.map((aluno) => (
+            <ListItem
+              key={aluno.id}
+              title={aluno.nome}
+              subtitle="Agenda e acompanhamento"
+              leading={<Avatar name={aluno.nome} />}
+              onPress={() => router.push(`/alunos/${aluno.id}` as Href)}
             />
-          </SurfaceCard>
-
-          {error ? (
-            <SurfaceCard style={styles.errorCard}>
-              <ThemedText style={[styles.errorText, { color: theme.danger }]}>{error}</ThemedText>
-            </SurfaceCard>
-          ) : null}
-
-          {loading ? (
-            <SurfaceCard style={styles.emptyCard}>
-              <ThemedText themeColor="textSecondary">Carregando alunos...</ThemedText>
-            </SurfaceCard>
-          ) : filteredAlunos.length === 0 ? (
-            <SurfaceCard style={styles.emptyCard}>
-              <ThemedText type="subtitle">Nenhum aluno encontrado.</ThemedText>
-              <ThemedText themeColor="textSecondary">Nenhum aluno está vinculado a esta turma no momento.</ThemedText>
-            </SurfaceCard>
-          ) : (
-            <View style={styles.list}>
-              {filteredAlunos.map((aluno) => (
-                <Pressable
-                  key={aluno.id}
-                  onPress={() => router.push(`/professor/agenda/${aluno.id}` as Href)}
-                  style={({ pressed }) => [styles.studentCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, pressed && styles.cardPressed]}
-                >
-                  <View style={[styles.avatar, { backgroundColor: theme.learningSoft }]}>
-                    <ThemedText style={[styles.avatarText, { color: theme.learning }]}>{aluno.nome.charAt(0)}</ThemedText>
-                  </View>
-                  <View style={styles.cardCopy}>
-                    <ThemedText type="smallBold">{aluno.nome}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">Acompanhar agenda e registros</ThemedText>
-                    <ThemedText type="small" style={[styles.cardAction, { color: theme.brand }]}>Abrir agenda  ›</ThemedText>
-                  </View>
-                  <View style={[styles.summaryBadge, { backgroundColor: theme.successSoft }]}>
-                    <AppIcon name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} color={theme.success} size={16} />
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          <PrimaryButton title="Voltar para turmas" onPress={() => router.replace('/professor/turmas' as Href)} variant="outline" />
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          ))}
+        </View>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { ...authStyles.content, justifyContent: 'flex-start' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonText: { fontSize: 28, lineHeight: 30, fontWeight: '700' },
-  headerText: { flex: 1 },
-  title: { marginTop: Spacing.one },
-  summaryCard: { gap: Spacing.two, padding: Spacing.three, marginBottom: Spacing.three },
-  summaryTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  searchInput: {
-    minHeight: 48,
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  list: { gap: Spacing.two, marginBottom: Spacing.five },
-  studentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.three,
-    borderWidth: 1,
-    ...Shadows.card,
-  },
-  cardPressed: { opacity: 0.88 },
-  avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '800' },
-  cardCopy: { flex: 1, gap: Spacing.one },
-  cardAction: { fontWeight: '700', marginTop: Spacing.one },
-  summaryBadge: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  emptyCard: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    backgroundColor: BrandColors.backgroundElement,
-    gap: Spacing.one,
-    marginBottom: Spacing.three,
-  },
-  errorCard: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    backgroundColor: BrandColors.backgroundElement,
-    marginBottom: Spacing.three,
-  },
-  errorText: {
-    fontWeight: '600',
-  },
+  list: { gap: Spacing.two },
 });

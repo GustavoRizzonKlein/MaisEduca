@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
 
-import { BrandColors } from '@/constants/theme';
+import { Palette } from '@/constants/theme';
 
 const DURATION = 300;
 
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     height: 144,
     position: 'absolute',
     borderRadius: 72,
-    backgroundColor: BrandColors.brandSoft,
+    backgroundColor: Palette.blueLight,
     opacity: 0.8,
   },
   iconContainer: {
@@ -99,10 +99,10 @@ const styles = StyleSheet.create({
     height: 128,
     position: 'absolute',
     borderRadius: 40,
-    backgroundColor: BrandColors.brandSoft,
+    backgroundColor: Palette.blueLight,
   },
   iconMarkText: {
-    color: BrandColors.brand,
+    color: Palette.blueInk,
     fontSize: 54,
     fontWeight: '800',
   },

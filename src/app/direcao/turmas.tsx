@@ -1,28 +1,44 @@
-import { Redirect, router, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
-import { AuthField, PrimaryButton, authStyles } from '@/components/auth-ui';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { BrandColors, Radius, Shadows, Spacing } from '@/constants/theme';
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  IconContainer,
+  Input,
+  ListItem,
+  LoadingState,
+  Notice,
+  PageHeader,
+  Screen,
+  SectionHeader,
+  UnauthorizedState,
+} from '@/components/ui';
+import { Spacing, type Tone } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
-import { useTheme } from '@/hooks/use-theme';
 import { createTurma, deleteTurma, listTurmas, updateTurma } from '@/services/school-service';
-import { canManageTurmas, homeRouteForRole } from '@/types/auth';
+import { canManageTurmas } from '@/types/auth';
 import type { Turma } from '@/types/school';
 
+const tileTones: Tone[] = ['purple', 'blue', 'green', 'peach', 'yellow', 'pink'];
+
 export default function DirecaoTurmasScreen() {
-  const { user, isLoading } = useAuth();
-  const theme = useTheme();
+  const { user } = useAuth();
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [editing, setEditing] = useState<Turma | null>(null);
   const [nome, setNome] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<Turma | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -34,18 +50,21 @@ export default function DirecaoTurmasScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!user || !canManageTurmas(user.role)) return;
+  const loadWithFeedback = useCallback(() => {
     refresh().catch((err: unknown) => {
       setLoadError(err instanceof Error ? err.message : 'Não foi possível carregar as turmas. Tente novamente.');
     });
-  }, [user, refresh]);
+  }, [refresh]);
 
-  if (isLoading) return null;
-  if (!user) return <Redirect href="/login" />;
-  if (!canManageTurmas(user.role)) return <Redirect href={homeRouteForRole(user.role)} />;
+  useEffect(() => {
+    if (!user || !canManageTurmas(user.role)) return;
+    loadWithFeedback();
+  }, [user, loadWithFeedback]);
+
+  if (!user || !canManageTurmas(user.role)) return <UnauthorizedState />;
 
   async function handleSave() {
+    setNotice(null);
     if (!nome.trim()) {
       setError('Informe o nome da turma.');
       return;
@@ -55,6 +74,7 @@ export default function DirecaoTurmasScreen() {
     try {
       if (editing) await updateTurma(editing.id, nome);
       else await createTurma(nome);
+      setNotice(editing ? 'Turma atualizada.' : 'Turma criada com sucesso.');
       setNome('');
       setEditing(null);
       await refresh();
@@ -65,139 +85,131 @@ export default function DirecaoTurmasScreen() {
     }
   }
 
-  function handleDelete(turma: Turma) {
-    Alert.alert('Excluir turma?', `Remover ${turma.nome}? Vínculos com professores serão removidos.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => {
-          setBusy(true);
-          deleteTurma(turma.id)
-            .then(refresh)
-            .catch((err: unknown) => {
-              setError(err instanceof Error ? err.message : 'Não foi possível excluir.');
-            })
-            .finally(() => setBusy(false));
-        },
-      },
-    ]);
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    const turma = pendingDelete;
+    setBusy(true);
+    setNotice(null);
+    deleteTurma(turma.id)
+      .then(async () => {
+        if (editing?.id === turma.id) {
+          setEditing(null);
+          setNome('');
+        }
+        setNotice('Turma removida.');
+        await refresh();
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Não foi possível excluir.');
+      })
+      .finally(() => {
+        setBusy(false);
+        setPendingDelete(null);
+      });
   }
 
   return (
-    <ThemedView style={authStyles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.replace('/direcao' as Href)}>
-            <ThemedText style={[styles.back, { color: theme.brand }]}>‹ Voltar</ThemedText>
-          </Pressable>
-          <ThemedText type="subtitle" style={styles.title}>Turmas</ThemedText>
-          <ThemedText themeColor="textSecondary">Escolha uma turma para visualizar e cadastrar seus alunos.</ThemedText>
-          {loadError && (
-            <View style={styles.loadError}>
-              <ThemedText style={authStyles.error}>{loadError}</ThemedText>
-              <PrimaryButton
-                title="Tentar novamente"
-                onPress={() => refresh().catch((err: unknown) => setLoadError(err instanceof Error ? err.message : 'Não foi possível carregar as turmas. Tente novamente.'))}
-                variant="outline"
-              />
-            </View>
-          )}
-          <View style={authStyles.form}>
-            <AuthField
-              label={editing ? 'Editar turma' : 'Nova turma'}
-              value={nome}
-              onChangeText={setNome}
-              placeholder="Ex.: 5º ano A"
-            />
-            {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            <PrimaryButton title={editing ? 'Salvar alterações' : 'Criar turma'} onPress={handleSave} loading={busy} />
-            {editing && (
-              <PrimaryButton
-                title="Cancelar edição"
-                onPress={() => {
-                  setEditing(null);
-                  setNome('');
-                }}
-                disabled={busy}
-                variant="outline"
-              />
-            )}
-          </View>
-          {loading ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={theme.brand} />
-              <ThemedText themeColor="textSecondary">Carregando turmas...</ThemedText>
-            </View>
-          ) : (
-            <View style={styles.list}>
-              {turmas.map((turma) => (
-                <View key={turma.id} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Ver alunos da turma ${turma.nome}`}
-                    style={styles.openClass}
-                    onPress={() => router.push(`/direcao/turmas/${turma.id}` as Href)}>
-                    <ThemedText type="smallBold" style={styles.cardTitle}>{turma.nome}</ThemedText>
-                    <ThemedText type="small" style={{ color: theme.brand }}>Ver alunos ›</ThemedText>
-                  </Pressable>
+    <Screen
+      edges={['top', 'left', 'right', 'bottom']}
+      header={<PageHeader title="Turmas" subtitle="Escolha uma turma para ver e cadastrar alunos" showBack />}>
+      <Card style={styles.form}>
+        <ThemedText type="heading">{editing ? 'Editar turma' : 'Nova turma'}</ThemedText>
+        <Input
+          label="Nome da turma"
+          required
+          icon="classes"
+          value={nome}
+          onChangeText={(value) => {
+            setNome(value);
+            setError(null);
+          }}
+          placeholder="Ex.: 1º ano A"
+          error={error}
+          editable={!busy}
+          returnKeyType="done"
+          onSubmitEditing={handleSave}
+        />
+        <Button title={editing ? 'Salvar alterações' : 'Criar turma'} icon={editing ? 'check' : 'plus'} onPress={handleSave} loading={busy} />
+        {editing ? (
+          <Button
+            title="Cancelar edição"
+            variant="outline"
+            onPress={() => {
+              setEditing(null);
+              setNome('');
+              setError(null);
+            }}
+            disabled={busy}
+          />
+        ) : null}
+      </Card>
+
+      {notice ? <Notice tone="success" message={notice} /> : null}
+
+      <View style={styles.section}>
+        <SectionHeader title="Turmas cadastradas" />
+        {loading ? (
+          <LoadingState rows={3} label="Carregando turmas" />
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={loadWithFeedback} />
+        ) : turmas.length === 0 ? (
+          <EmptyState
+            icon="classes"
+            tone="purple"
+            title="Nenhuma turma cadastrada"
+            description="Crie uma turma para começar a organizar a escola."
+          />
+        ) : (
+          <View style={styles.list}>
+            {turmas.map((turma, index) => (
+              <ListItem
+                key={turma.id}
+                title={turma.nome}
+                subtitle="Ver e cadastrar alunos"
+                leading={<IconContainer icon="classes" tone={tileTones[index % tileTones.length]} />}
+                onPress={() => router.push(`/direcao/turmas/${turma.id}` as Href)}
+                showChevron={false}
+                trailing={
                   <View style={styles.actions}>
-                    <Pressable
+                    <IconButton
+                      icon="edit"
+                      accessibilityLabel={`Editar turma ${turma.nome}`}
                       onPress={() => {
                         setEditing(turma);
                         setNome(turma.nome);
-                      }}>
-                      <ThemedText style={[styles.link, { color: theme.brand }]}>Editar</ThemedText>
-                    </Pressable>
-                    <Pressable onPress={() => handleDelete(turma)}>
-                      <ThemedText style={[styles.danger, { color: theme.danger }]}>Excluir</ThemedText>
-                    </Pressable>
+                        setError(null);
+                        setNotice(null);
+                      }}
+                    />
+                    <IconButton
+                      icon="trash"
+                      accessibilityLabel={`Excluir turma ${turma.nome}`}
+                      onPress={() => setPendingDelete(turma)}
+                    />
                   </View>
-                </View>
-              ))}
-              {turmas.length === 0 && !loadError && (
-                <View style={[styles.emptyState, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  <ThemedText style={[styles.emptyIcon, { color: theme.learning }]}>▦</ThemedText>
-                  <ThemedText type="smallBold">Nenhuma turma cadastrada</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">Crie uma turma para começar a organizar a escola.</ThemedText>
-                </View>
-              )}
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+                }
+              />
+            ))}
+          </View>
+        )}
+      </View>
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title="Excluir turma?"
+        message={pendingDelete ? `Remover ${pendingDelete.nome}? Vínculos com professores serão removidos.` : ''}
+        confirmLabel="Excluir"
+        loading={busy}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { ...authStyles.content, justifyContent: 'flex-start', gap: Spacing.three },
-  back: { color: BrandColors.brand, fontWeight: '700' },
-  title: { marginBottom: Spacing.one },
-  list: { gap: Spacing.two, marginTop: Spacing.four },
-  loading: { alignItems: 'center', gap: Spacing.two, padding: Spacing.four },
-  loadError: { gap: Spacing.two },
-  card: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    backgroundColor: BrandColors.backgroundElement,
-    ...Shadows.card,
-    gap: Spacing.two,
-  },
-  openClass: { gap: Spacing.one, minHeight: 44, justifyContent: 'center' },
-  cardTitle: { flex: 1 },
-  emptyState: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: Radius.large,
-    padding: Spacing.four,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    backgroundColor: BrandColors.backgroundElement,
-  },
-  emptyIcon: { color: BrandColors.learning, fontSize: 24 },
-  actions: { flexDirection: 'row', gap: Spacing.four },
-  link: { color: BrandColors.brand, fontWeight: '700' },
-  danger: { color: BrandColors.danger, fontWeight: '700' },
+  form: { gap: Spacing.three },
+  section: { gap: Spacing.three },
+  list: { gap: Spacing.two },
+  actions: { flexDirection: 'row', gap: Spacing.two },
 });
