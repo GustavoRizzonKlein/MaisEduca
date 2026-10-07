@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import type { User as AuthUser } from '@supabase/supabase-js';
 
 import { getSupabase } from '@/lib/supabase';
@@ -61,6 +62,9 @@ function authErrorMessage(error: { message: string; status?: number } | null, fa
   if (message.includes('email not confirmed')) {
     return 'Confirme o e-mail da conta antes de entrar.';
   }
+  if (message.includes('password should be at least') || message.includes('password too short') || message.includes('should be at least 6')) {
+    return 'A senha não atende aos requisitos mínimos.';
+  }
   if (message.includes('cadastro público desabilitado') || message.includes('signups not allowed')) {
     return 'Cadastro público desabilitado. Contas são criadas apenas pela Direção.';
   }
@@ -108,9 +112,19 @@ export async function signIn(email: string, senha: string): Promise<PublicUser> 
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
-  const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim().toLowerCase());
+  const redirectTo = Linking.createURL('/reset-password');
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo,
+  });
   if (error) {
     throw new Error(authErrorMessage(error, 'Não foi possível enviar o e-mail de redefinição.'));
+  }
+}
+
+export async function updatePassword(password: string): Promise<void> {
+  const { error } = await getSupabase().auth.updateUser({ password });
+  if (error) {
+    throw new Error(authErrorMessage(error, 'Não foi possível redefinir a senha.'));
   }
 }
 

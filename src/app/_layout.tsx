@@ -35,6 +35,8 @@ function AuthorizedStack() {
       <Stack.Protected guard={isSignedOut}>
         <Stack.Screen name="login" />
         <Stack.Screen name="cadastro" />
+        <Stack.Screen name="recuperar-senha" />
+        <Stack.Screen name="reset-password" />
       </Stack.Protected>
       <Stack.Protected guard={hasInvalidProfile}>
         <Stack.Screen name="acesso-negado" />

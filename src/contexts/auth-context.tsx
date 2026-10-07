@@ -6,6 +6,7 @@ import {
   requestPasswordReset as sendPasswordResetEmail,
   signIn,
   signOut,
+  updatePassword,
 } from '@/services/auth-service';
 import type { PublicUser } from '@/types/auth';
 
@@ -17,6 +18,7 @@ type AuthContextValue = {
   login: (email: string, senha: string) => Promise<PublicUser>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   clearError: () => void;
 };
 
@@ -76,6 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (resetError: unknown) {
           const message =
             resetError instanceof Error ? resetError.message : 'Não foi possível enviar o e-mail de redefinição.';
+          setError(message);
+          throw new Error(message);
+        }
+      },
+      updatePassword: async (password) => {
+        setError(null);
+        try {
+          await updatePassword(password);
+        } catch (resetError: unknown) {
+          const message =
+            resetError instanceof Error ? resetError.message : 'Não foi possível redefinir a senha.';
           setError(message);
           throw new Error(message);
         }

@@ -14,18 +14,16 @@ import { homeRouteForRole } from '@/types/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { user, login, requestPasswordReset, error, clearError } = useAuth();
+  const { user, login, error, clearError } = useAuth();
   const theme = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [info, setInfo] = useState<string | null>(null);
 
   if (user) return <Redirect href={homeRouteForRole(user.role)} />;
 
   async function handleLogin() {
     clearError();
-    setInfo(null);
     if (!email.trim() || !senha) {
       return;
     }
@@ -36,24 +34,6 @@ export default function LoginScreen() {
       router.replace(homeRouteForRole(authenticatedUser.role));
     } catch {
       // O contexto mantém a mensagem exibida no formulário.
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handlePasswordReset() {
-    clearError();
-    setInfo(null);
-    if (!email.trim()) {
-      setInfo('Informe o e-mail para receber o link de redefinição.');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await requestPasswordReset(email);
-      setInfo('Se o e-mail existir, enviamos um link para redefinir a senha.');
-    } catch {
-      // erro no contexto
     } finally {
       setIsSubmitting(false);
     }
@@ -89,9 +69,8 @@ export default function LoginScreen() {
               placeholder="Digite sua senha"
             />
             {error && <ThemedText style={authStyles.error}>{error}</ThemedText>}
-            {info && <ThemedText style={[styles.info, { color: theme.brand, backgroundColor: theme.brandSoft }]}>{info}</ThemedText>}
             <PrimaryButton title="Entrar" onPress={handleLogin} loading={isSubmitting} />
-            <Pressable style={authStyles.linkButton} onPress={handlePasswordReset} disabled={isSubmitting}>
+            <Pressable style={authStyles.linkButton} onPress={() => router.push('/recuperar-senha' as any)} disabled={isSubmitting}>
               <ThemedText style={authStyles.linkText}>Esqueci minha senha</ThemedText>
             </Pressable>
           </SurfaceCard>
