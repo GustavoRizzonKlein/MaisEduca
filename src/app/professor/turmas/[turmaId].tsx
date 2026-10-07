@@ -14,6 +14,7 @@ import {
   UnauthorizedState,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { TurmaActions } from '@/components/turma-actions';
 import { useAuth } from '@/contexts/auth-context';
 import { listAlunosByTurma, listTurmas } from '@/services/school-service';
 import { canAccessProfessorArea } from '@/types/auth';
@@ -73,6 +74,8 @@ export default function ProfessorTurmaStudentsScreen() {
           {alunos.length > 0 ? <SearchInput value={search} onChangeText={setSearch} placeholder="Buscar aluno..." /> : null}
         </PageHeader>
       }>
+      {turmaId ? <TurmaActions turmaId={turmaId} /> : null}
+
       {loading ? (
         <LoadingState rows={4} label="Carregando alunos" />
       ) : error ? (

@@ -16,6 +16,10 @@ export type Permission =
   | 'agenda:view'
   | 'agenda:edit'
   | 'acompanhamento:view'
+  | 'frequencia:edit'
+  | 'registros:edit'
+  | 'desempenho:view'
+  | 'desempenho:escola'
   | 'comunicados:approve'
   | 'users:manage'
   | 'professores:manage'
@@ -31,6 +35,10 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'agenda:view',
     'agenda:edit',
     'acompanhamento:view',
+    'frequencia:edit',
+    'registros:edit',
+    'desempenho:view',
+    'desempenho:escola',
     'comunicados:approve',
     'users:manage',
     'professores:manage',
@@ -40,9 +48,26 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'turmas:manage',
     'alunos:manage',
   ],
-  professor: ['access:professor', 'agenda:view', 'agenda:edit', 'acompanhamento:view'],
-  apoio: ['access:professor', 'agenda:view', 'agenda:edit', 'acompanhamento:view'],
-  responsavel: ['access:responsavel', 'agenda:view', 'acompanhamento:view'],
+  professor: [
+    'access:professor',
+    'agenda:view',
+    'agenda:edit',
+    'acompanhamento:view',
+    'frequencia:edit',
+    'registros:edit',
+    'desempenho:view',
+  ],
+  apoio: [
+    'access:professor',
+    'agenda:view',
+    'agenda:edit',
+    'acompanhamento:view',
+    'frequencia:edit',
+    'registros:edit',
+    'desempenho:view',
+  ],
+  // O escopo (somente os próprios filhos) é garantido pelo RLS.
+  responsavel: ['access:responsavel', 'agenda:view', 'acompanhamento:view', 'desempenho:view'],
 };
 
 export type User = {

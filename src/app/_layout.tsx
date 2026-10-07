@@ -4,9 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Palette } from '@/constants/theme';
-import { AgendaProvider } from '@/contexts/agenda-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
-import { hasAnyRole } from '@/types/auth';
+import { can, hasAnyRole } from '@/types/auth';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,11 +18,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <AuthProvider>
-        <AgendaProvider>
-          <StatusBar style="dark" />
-          <AnimatedSplashOverlay />
-          <AuthorizedStack />
-        </AgendaProvider>
+        <StatusBar style="dark" />
+        <AnimatedSplashOverlay />
+        <AuthorizedStack />
       </AuthProvider>
     </ThemeProvider>
   );
@@ -34,6 +31,7 @@ function AuthorizedStack() {
   const isSignedIn = !isLoading && Boolean(user);
   const isDirecao = !isLoading && hasAnyRole(user?.role, ['direcao']);
   const isProfessor = !isLoading && hasAnyRole(user?.role, ['professor', 'apoio']);
+  const canTakeAttendance = !isLoading && can(user?.role, 'frequencia:edit');
   // Liberado também durante o carregamento da sessão: sem isso, deep links como
   // /reset-password?code=... (e-mail de recuperação) eram redirecionados antes de abrir.
   const isSignedOut = !user && !hasInvalidProfile;
@@ -53,6 +51,14 @@ function AuthorizedStack() {
       <Stack.Protected guard={isSignedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="alunos/[alunoId]" />
+        <Stack.Screen name="desempenho/turma/[turmaId]" />
+        <Stack.Screen name="desempenho/aluno/[alunoId]" />
+        <Stack.Screen name="relatorios/index" />
+        <Stack.Screen name="relatorios/turma/[turmaId]" />
+        <Stack.Screen name="relatorios/aluno/[alunoId]" />
+      </Stack.Protected>
+      <Stack.Protected guard={canTakeAttendance}>
+        <Stack.Screen name="chamada/[turmaId]" />
       </Stack.Protected>
       <Stack.Protected guard={isDirecao}>
         <Stack.Screen name="direcao/usuarios" />

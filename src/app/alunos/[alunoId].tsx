@@ -3,12 +3,15 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AgendaPanel } from '@/components/agenda/agenda-panel';
+import { AttendanceSection } from '@/components/student/attendance-section';
+import { RecordsSection } from '@/components/student/records-section';
 import { ThemedText } from '@/components/themed-text';
 import {
   Avatar,
   Badge,
-  EmptyState,
   ErrorState,
+  IconContainer,
+  ListItem,
   LoadingState,
   PageHeader,
   Screen,
@@ -20,7 +23,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useStudents } from '@/hooks/use-students';
 import { listManagedUsers } from '@/services/manage-users-service';
 import { listResponsaveisDosAlunos } from '@/services/school-service';
-import { canManageAlunos, canManageResponsaveis, canViewAcompanhamento } from '@/types/auth';
+import { can, canManageAlunos, canManageResponsaveis, canViewAcompanhamento } from '@/types/auth';
 
 type Section = 'agenda' | 'presenca' | 'registros';
 
@@ -127,22 +130,15 @@ export default function AlunoDetailScreen() {
       />
 
       {section === 'agenda' ? <AgendaPanel alunoId={student.id} context={student.turmaNome} /> : null}
-      {section === 'presenca' ? (
-        <EmptyState
-          icon="attendance"
-          tone="green"
-          badge="Em breve"
-          title="Presença ainda não disponível"
-          description="O registro de presença e os avisos de ausência ainda não foram implementados no sistema."
-        />
-      ) : null}
-      {section === 'registros' ? (
-        <EmptyState
-          icon="notes"
-          tone="yellow"
-          badge="Em breve"
-          title="Registros ainda não disponíveis"
-          description="As observações de acompanhamento (avanços, dificuldades e atividades) ainda não são salvas no sistema."
+      {section === 'presenca' ? <AttendanceSection alunoId={student.id} canEdit={can(role, 'frequencia:edit')} /> : null}
+      {section === 'registros' ? <RecordsSection alunoId={student.id} canEdit={can(role, 'registros:edit')} /> : null}
+
+      {can(role, 'desempenho:view') ? (
+        <ListItem
+          title="Ver desempenho"
+          subtitle="Frequência, atividades e registros por período"
+          leading={<IconContainer icon="chart" tone="blue" />}
+          onPress={() => router.push({ pathname: '/desempenho/aluno/[alunoId]', params: { alunoId: student.id } })}
         />
       ) : null}
     </Screen>

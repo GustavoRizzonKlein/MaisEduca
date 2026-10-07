@@ -21,6 +21,7 @@ import {
   UnauthorizedState,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { TurmaActions } from '@/components/turma-actions';
 import { useAuth } from '@/contexts/auth-context';
 import { listManagedUsers } from '@/services/manage-users-service';
 import {
@@ -165,6 +166,8 @@ export default function DirecaoTurmaAlunosScreen() {
         <FloatingActionButton accessibilityLabel="Cadastrar aluno" onPress={() => openForm(null)} />
       ) : null}>
       {notice ? <Notice tone={notice.tone} message={notice.message} /> : null}
+
+      {turmaId ? <TurmaActions turmaId={turmaId} /> : null}
 
       {loading ? (
         <LoadingState rows={4} label="Carregando alunos" />

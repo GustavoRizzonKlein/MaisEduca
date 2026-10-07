@@ -50,6 +50,8 @@ export const Icons = {
   more: { ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' },
   sparkles: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
   key: { ios: 'key', android: 'key', web: 'key' },
+  share: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
+  chart: { ios: 'chart.bar', android: 'bar_chart', web: 'bar_chart' },
 } as const satisfies Record<string, AppIconName>;
 
 export type IconKey = keyof typeof Icons;

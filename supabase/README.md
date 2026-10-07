@@ -27,7 +27,27 @@ key. Authorization roles come from server-managed `auth.users.app_metadata.role`
 the migration also updates existing `professor_apoio` role values to `apoio`.
 Only the `manage-users` Edge Function should use the service-role key.
 
-The current agenda is held in the app's in-memory `AgendaProvider`; there is no
-agenda table to protect with RLS yet. Keep its data non-sensitive until agenda
-records are persisted in Supabase, then add row-level policies for those tables
-before enabling remote writes.
+## Presença, registros e agenda (20261007100000)
+
+The `20261007100000_presencas_registros_agenda.sql` migration adds the data
+used by the Painel de Desempenho:
+
+- `presencas`: one attendance row per student per day (`presente` / `ausente`),
+  enforced by a unique `(aluno_id, data)` constraint; the app upserts.
+- `registros`: qualitative follow-up notes with a fixed category
+  (`avanco`, `dificuldade`, `atividade`, `participacao`).
+- `agenda_itens`: the agenda that previously lived only in app memory.
+
+All three reuse `can_access_student()` for reads, so each profile sees exactly the
+students it already sees in `alunos`. Writes require Direção, Professor or
+Professor de Apoio **and** access to the student (`can_write_student_data()`).
+Notes can only be edited/deleted by their author or by Direção. `criado_por`,
+`created_at` and `updated_at` are set by a trigger, never by the client.
+
+The panel reads two `SECURITY INVOKER` functions, so RLS still applies:
+`desempenho_por_aluno(inicio, fim, turma?, aluno?)` (counts per student) and
+`frequencia_diaria(inicio, fim, turma?, aluno?)` (daily totals). Periods are
+`date` values, inclusive on both ends, limited to one year.
+
+No performance score is stored or derived: indicators are raw counts and the
+attendance rate `presenças / (presenças + ausências)`.

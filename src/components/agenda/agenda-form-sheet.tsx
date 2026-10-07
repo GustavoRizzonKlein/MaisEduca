@@ -26,11 +26,12 @@ function validate(draft: AgendaItem): FieldErrors {
 
 type AgendaFormSheetProps = {
   item: AgendaItem | null;
+  saving?: boolean;
   onClose: () => void;
   onSave: (item: AgendaItem) => void;
 };
 
-export function AgendaFormSheet({ item, onClose, onSave }: AgendaFormSheetProps) {
+export function AgendaFormSheet({ item, saving = false, onClose, onSave }: AgendaFormSheetProps) {
   const [draft, setDraft] = useState<AgendaItem | null>(item);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -69,8 +70,8 @@ export function AgendaFormSheet({ item, onClose, onSave }: AgendaFormSheetProps)
       onClose={onClose}
       footer={
         <>
-          <Button title="Salvar" icon="check" onPress={save} />
-          <Button title="Cancelar" variant="outline" onPress={onClose} />
+          <Button title="Salvar" icon="check" onPress={save} loading={saving} />
+          <Button title="Cancelar" variant="outline" onPress={onClose} disabled={saving} />
         </>
       }>
       <Input

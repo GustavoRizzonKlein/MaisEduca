@@ -9,10 +9,10 @@ import { DaySummaryCard, ShortcutGrid, type Shortcut, type SummaryMetric } from 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar, EmptyState, ErrorState, LoadingState, Screen, SectionHeader } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { useAgenda } from '@/contexts/agenda-context';
 import { useAuth } from '@/contexts/auth-context';
+import { useAgendaItems } from '@/hooks/use-agenda-items';
 import { useStudents } from '@/hooks/use-students';
-import { getWeekDays, greetingForNow, todayKey } from '@/lib/dates';
+import { addDays, formatDate, getStartOfWeek, getWeekDays, greetingForNow, todayKey } from '@/lib/dates';
 import { canAccessProfessorArea, canManageTurmas, canManageUsers, roleLabel } from '@/types/auth';
 
 const roleIntro = {
@@ -24,7 +24,9 @@ const roleIntro = {
 
 export default function InicioScreen() {
   const { user } = useAuth();
-  const { items } = useAgenda();
+  const weekStart = formatDate(getStartOfWeek(new Date()));
+  const horizon = formatDate(addDays(new Date(), 30));
+  const { items, reload: reloadAgenda } = useAgendaItems({ from: weekStart, to: horizon, limit: 200 });
   const { students, turmas, loading, error, reload } = useStudents();
 
   const studentById = useMemo(() => new Map(students.map((student) => [student.id, student])), [students]);
@@ -81,7 +83,12 @@ export default function InicioScreen() {
   }
 
   return (
-    <Screen onRefresh={reload} refreshing={loading && students.length > 0}>
+    <Screen
+      onRefresh={() => {
+        void reload();
+        void reloadAgenda();
+      }}
+      refreshing={loading && students.length > 0}>
       <Animated.View entering={FadeInDown.duration(360)} style={styles.greeting}>
         <View style={styles.greetingCopy}>
           <ThemedText type="small" themeColor="textMuted">{roleLabel(role)}</ThemedText>

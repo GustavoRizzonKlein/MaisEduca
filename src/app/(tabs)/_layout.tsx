@@ -23,6 +23,7 @@ export default function TabsLayout() {
   const role = user?.role;
   const canViewAgenda = can(role, 'agenda:view');
   const canViewStudents = can(role, 'acompanhamento:view');
+  const canViewPerformance = can(role, 'desempenho:view');
 
   return (
     <Tabs
@@ -59,6 +60,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="desempenho"
+        options={{
+          title: role === 'responsavel' ? 'Evolução' : 'Desempenho',
+          href: canViewPerformance ? undefined : null,
+          tabBarIcon: ({ focused }) => <TabIcon icon="chart" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="comunicacao"
         options={{
           title: 'Comunicação',
@@ -85,8 +94,9 @@ const styles = StyleSheet.create({
     elevation: 0,
     boxShadow: '0px -4px 16px rgba(51, 65, 85, 0.04)',
   },
-  item: { paddingVertical: 2 },
-  label: { fontSize: 11, fontWeight: '600', marginTop: 2 },
-  iconPill: { width: 48, height: 28, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  item: { paddingVertical: 2, paddingHorizontal: 0 },
+  // 10 pt é o tamanho padrão de legenda da tab bar do iOS; cabe 6 abas em 375 pt.
+  label: { fontSize: 10, fontWeight: '600', marginTop: 2 },
+  iconPill: { width: 44, height: 28, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   iconPillActive: { backgroundColor: Palette.blueLight },
 });
