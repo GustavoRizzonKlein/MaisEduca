@@ -49,6 +49,8 @@ function AuthorizedStack() {
       </Stack.Protected>
       <Stack.Protected guard={isProfessor}>
         <Stack.Screen name="professor/index" />
+        <Stack.Screen name="professor/turmas" />
+        <Stack.Screen name="professor/turmas/[turmaId]" />
         <Stack.Screen name="professor/agenda/[studentId]" />
       </Stack.Protected>
       <Stack.Protected guard={isResponsavel}>
